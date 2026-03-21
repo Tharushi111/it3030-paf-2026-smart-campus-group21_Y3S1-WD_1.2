@@ -1,0 +1,1 @@
+# it3030-paf-2026-smart-campus-group29_1.2
