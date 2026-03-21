@@ -116,8 +116,8 @@ The system enables:
 ### 1️ Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/it3030-paf-2026-campusnexus-groupXX.git
-cd it3030-paf-2026-campusnexus-groupXX
+git clone https://github.com/Tharushi111/it3030-paf-2026-smart-campus-group29_1.2.git
+cd it3030-paf-2026-smart-campus-group29_1.2
 ```
 
 ---
