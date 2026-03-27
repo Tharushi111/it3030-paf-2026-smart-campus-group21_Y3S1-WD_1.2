@@ -29,19 +29,22 @@ public class ResourceService {
 
     public Resource updateResource(Long id, Resource resourceDetails) {
         Resource resource = repository.findById(id).orElse(null);
-        if(resource != null){
+
+        if (resource != null) {
             resource.setName(resourceDetails.getName());
             resource.setType(resourceDetails.getType());
             resource.setCapacity(resourceDetails.getCapacity());
             resource.setLocation(resourceDetails.getLocation());
             resource.setStatus(resourceDetails.getStatus());
+
             return repository.save(resource);
         }
+
         return null;
     }
 
     public boolean deleteResource(Long id) {
-        if(repository.existsById(id)){
+        if (repository.existsById(id)) {
             repository.deleteById(id);
             return true;
         }
