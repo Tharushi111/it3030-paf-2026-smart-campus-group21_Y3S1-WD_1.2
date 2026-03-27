@@ -1,4 +1,3 @@
-// AddResourceModal.jsx
 import { useState } from "react";
 import { FiX, FiPlus, FiType, FiMapPin, FiUsers, FiToggleRight } from "react-icons/fi";
 import toast from "react-hot-toast";
@@ -15,18 +14,33 @@ const TYPES = ["LAB", "LECTURE_HALL", "MEETING_ROOM", "PROJECTOR", "CAMERA"];
 
 export default function AddResourceModal({ onClose, onSave }) {
   const [form, setForm] = useState(initialForm);
+  const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+    // Clear error for this field when user starts typing
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!form.name.trim()) newErrors.name = "Resource name is required";
+    if (!form.location.trim()) newErrors.location = "Location is required";
+    if (!form.capacity || Number(form.capacity) <= 0) newErrors.capacity = "Capacity must be a positive number";
+    if (!form.type) newErrors.type = "Type is required";
+    if (!form.status) newErrors.status = "Status is required";
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.name.trim()) { toast.error("Resource name is required"); return; }
-    if (!form.location.trim()) { toast.error("Location is required"); return; }
-    if (!form.capacity || Number(form.capacity) <= 0) { toast.error("Capacity must be greater than 0"); return; }
+    if (!validateForm()) return;
 
     setSubmitting(true);
     try {
@@ -68,7 +82,7 @@ export default function AddResourceModal({ onClose, onSave }) {
           {/* Name */}
           <div>
             <label className="flex items-center gap-1.5 text-xs font-semibold text-orange-400/80 mb-2 uppercase tracking-wider">
-              <FiType size={11} /> Resource Name
+              <FiType size={11} /> Resource Name <span className="text-red-500 ml-1">*</span>
             </label>
             <input
               type="text"
@@ -76,19 +90,22 @@ export default function AddResourceModal({ onClose, onSave }) {
               value={form.name}
               onChange={handleChange}
               placeholder="e.g. Engineering Lab 01"
-              className="w-full bg-white/[0.03] border border-orange-500/30 rounded-xl px-4 py-2.5 text-white placeholder-zinc-600 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition"
+              className={`w-full bg-white/[0.03] border ${errors.name ? "border-red-500/70" : "border-orange-500/30"} rounded-xl px-4 py-2.5 text-white placeholder-zinc-600 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition`}
             />
+            {errors.name && <p className="text-xs text-red-400 mt-1">{errors.name}</p>}
           </div>
 
           {/* Type + Capacity */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-semibold text-orange-400/80 mb-2 uppercase tracking-wider block">Type</label>
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-orange-400/80 mb-2 uppercase tracking-wider">
+                Type <span className="text-red-500 ml-1">*</span>
+              </label>
               <select
                 name="type"
                 value={form.type}
                 onChange={handleChange}
-                className="w-full bg-white/[0.03] border border-orange-500/30 rounded-xl px-4 py-2.5 text-white outline-none focus:border-orange-500 transition cursor-pointer"
+                className={`w-full bg-white/[0.03] border ${errors.type ? "border-red-500/70" : "border-orange-500/30"} rounded-xl px-4 py-2.5 text-white outline-none focus:border-orange-500 transition cursor-pointer`}
               >
                 {TYPES.map((t) => (
                   <option key={t} value={t} className="bg-slate-950 text-white">
@@ -96,10 +113,11 @@ export default function AddResourceModal({ onClose, onSave }) {
                   </option>
                 ))}
               </select>
+              {errors.type && <p className="text-xs text-red-400 mt-1">{errors.type}</p>}
             </div>
             <div>
               <label className="flex items-center gap-1.5 text-xs font-semibold text-orange-400/80 mb-2 uppercase tracking-wider">
-                <FiUsers size={11} /> Capacity
+                <FiUsers size={11} /> Capacity <span className="text-red-500 ml-1">*</span>
               </label>
               <input
                 type="number"
@@ -107,15 +125,16 @@ export default function AddResourceModal({ onClose, onSave }) {
                 value={form.capacity}
                 onChange={handleChange}
                 placeholder="e.g. 40"
-                className="w-full bg-white/[0.03] border border-orange-500/30 rounded-xl px-4 py-2.5 text-white placeholder-zinc-600 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition"
+                className={`w-full bg-white/[0.03] border ${errors.capacity ? "border-red-500/70" : "border-orange-500/30"} rounded-xl px-4 py-2.5 text-white placeholder-zinc-600 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition`}
               />
+              {errors.capacity && <p className="text-xs text-red-400 mt-1">{errors.capacity}</p>}
             </div>
           </div>
 
           {/* Location */}
           <div>
             <label className="flex items-center gap-1.5 text-xs font-semibold text-orange-400/80 mb-2 uppercase tracking-wider">
-              <FiMapPin size={11} /> Location
+              <FiMapPin size={11} /> Location <span className="text-red-500 ml-1">*</span>
             </label>
             <input
               type="text"
@@ -123,14 +142,15 @@ export default function AddResourceModal({ onClose, onSave }) {
               value={form.location}
               onChange={handleChange}
               placeholder="e.g. Building A - Floor 2"
-              className="w-full bg-white/[0.03] border border-orange-500/30 rounded-xl px-4 py-2.5 text-white placeholder-zinc-600 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition"
+              className={`w-full bg-white/[0.03] border ${errors.location ? "border-red-500/70" : "border-orange-500/30"} rounded-xl px-4 py-2.5 text-white placeholder-zinc-600 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition`}
             />
+            {errors.location && <p className="text-xs text-red-400 mt-1">{errors.location}</p>}
           </div>
 
           {/* Status */}
           <div>
             <label className="flex items-center gap-1.5 text-xs font-semibold text-orange-400/80 mb-2 uppercase tracking-wider">
-              <FiToggleRight size={11} /> Status
+              <FiToggleRight size={11} /> Status <span className="text-red-500 ml-1">*</span>
             </label>
             <div className="grid grid-cols-2 gap-2">
               {["ACTIVE", "OUT_OF_SERVICE"].map((s) => (
@@ -150,6 +170,7 @@ export default function AddResourceModal({ onClose, onSave }) {
                 </button>
               ))}
             </div>
+            {errors.status && <p className="text-xs text-red-400 mt-1">{errors.status}</p>}
           </div>
 
           {/* Actions */}

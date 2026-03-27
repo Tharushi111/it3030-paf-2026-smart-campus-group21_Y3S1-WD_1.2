@@ -1,4 +1,3 @@
-// EditResourceModal.jsx
 import { useEffect, useState } from "react";
 import { FiX, FiSave, FiEdit2, FiMapPin, FiUsers, FiToggleRight } from "react-icons/fi";
 
@@ -6,16 +5,36 @@ const TYPES = ["LAB", "LECTURE_HALL", "MEETING_ROOM", "PROJECTOR", "CAMERA"];
 
 export default function EditResourceModal({ resource, onClose, onSave }) {
   const [form, setForm] = useState(resource);
+  const [errors, setErrors] = useState({});
 
-  useEffect(() => { setForm(resource); }, [resource]);
+  useEffect(() => {
+    setForm(resource);
+    setErrors({}); // reset errors when resource changes
+  }, [resource]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!form.name?.trim()) newErrors.name = "Resource name is required";
+    if (!form.location?.trim()) newErrors.location = "Location is required";
+    if (!form.capacity || Number(form.capacity) <= 0) newErrors.capacity = "Capacity must be a positive number";
+    if (!form.type) newErrors.type = "Type is required";
+    if (!form.status) newErrors.status = "Status is required";
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!validateForm()) return;
     onSave(form);
   };
 
@@ -50,25 +69,30 @@ export default function EditResourceModal({ resource, onClose, onSave }) {
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
           {/* Name */}
           <div>
-            <label className="text-xs font-semibold text-orange-400/80 mb-2 uppercase tracking-wider block">Resource Name</label>
+            <label className="flex items-center gap-1.5 text-xs font-semibold text-orange-400/80 mb-2 uppercase tracking-wider">
+              Resource Name <span className="text-red-500 ml-1">*</span>
+            </label>
             <input
               type="text"
               name="name"
               value={form.name}
               onChange={handleChange}
-              className="w-full bg-white/[0.03] border border-orange-500/30 rounded-xl px-4 py-2.5 text-white outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition"
+              className={`w-full bg-white/[0.03] border ${errors.name ? "border-red-500/70" : "border-orange-500/30"} rounded-xl px-4 py-2.5 text-white outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition`}
             />
+            {errors.name && <p className="text-xs text-red-400 mt-1">{errors.name}</p>}
           </div>
 
           {/* Type + Capacity */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-semibold text-orange-400/80 mb-2 uppercase tracking-wider block">Type</label>
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-orange-400/80 mb-2 uppercase tracking-wider">
+                Type <span className="text-red-500 ml-1">*</span>
+              </label>
               <select
                 name="type"
                 value={form.type}
                 onChange={handleChange}
-                className="w-full bg-white/[0.03] border border-orange-500/30 rounded-xl px-4 py-2.5 text-white outline-none focus:border-orange-500 transition cursor-pointer"
+                className={`w-full bg-white/[0.03] border ${errors.type ? "border-red-500/70" : "border-orange-500/30"} rounded-xl px-4 py-2.5 text-white outline-none focus:border-orange-500 transition cursor-pointer`}
               >
                 {TYPES.map((t) => (
                   <option key={t} value={t} className="bg-slate-950 text-white">
@@ -76,39 +100,42 @@ export default function EditResourceModal({ resource, onClose, onSave }) {
                   </option>
                 ))}
               </select>
+              {errors.type && <p className="text-xs text-red-400 mt-1">{errors.type}</p>}
             </div>
             <div>
               <label className="flex items-center gap-1.5 text-xs font-semibold text-orange-400/80 mb-2 uppercase tracking-wider">
-                <FiUsers size={11} /> Capacity
+                <FiUsers size={11} /> Capacity <span className="text-red-500 ml-1">*</span>
               </label>
               <input
                 type="number"
                 name="capacity"
                 value={form.capacity}
                 onChange={handleChange}
-                className="w-full bg-white/[0.03] border border-orange-500/30 rounded-xl px-4 py-2.5 text-white outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition"
+                className={`w-full bg-white/[0.03] border ${errors.capacity ? "border-red-500/70" : "border-orange-500/30"} rounded-xl px-4 py-2.5 text-white outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition`}
               />
+              {errors.capacity && <p className="text-xs text-red-400 mt-1">{errors.capacity}</p>}
             </div>
           </div>
 
           {/* Location */}
           <div>
             <label className="flex items-center gap-1.5 text-xs font-semibold text-orange-400/80 mb-2 uppercase tracking-wider">
-              <FiMapPin size={11} /> Location
+              <FiMapPin size={11} /> Location <span className="text-red-500 ml-1">*</span>
             </label>
             <input
               type="text"
               name="location"
               value={form.location}
               onChange={handleChange}
-              className="w-full bg-white/[0.03] border border-orange-500/30 rounded-xl px-4 py-2.5 text-white outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition"
+              className={`w-full bg-white/[0.03] border ${errors.location ? "border-red-500/70" : "border-orange-500/30"} rounded-xl px-4 py-2.5 text-white outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition`}
             />
+            {errors.location && <p className="text-xs text-red-400 mt-1">{errors.location}</p>}
           </div>
 
           {/* Status */}
           <div>
             <label className="flex items-center gap-1.5 text-xs font-semibold text-orange-400/80 mb-2 uppercase tracking-wider">
-              <FiToggleRight size={11} /> Status
+              <FiToggleRight size={11} /> Status <span className="text-red-500 ml-1">*</span>
             </label>
             <div className="grid grid-cols-2 gap-2">
               {["ACTIVE", "OUT_OF_SERVICE"].map((s) => (
@@ -128,6 +155,7 @@ export default function EditResourceModal({ resource, onClose, onSave }) {
                 </button>
               ))}
             </div>
+            {errors.status && <p className="text-xs text-red-400 mt-1">{errors.status}</p>}
           </div>
 
           {/* Actions */}
