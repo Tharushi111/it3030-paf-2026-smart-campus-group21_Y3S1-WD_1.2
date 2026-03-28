@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import {
   FiBox,
@@ -13,6 +13,7 @@ import {
   FiFilter,
   FiLayers,
   FiImage,
+  FiChevronDown,
 } from "react-icons/fi";
 import AddResourceModal from "./ResourceForm";
 import EditResourceModal from "./EditResourceModal";
@@ -22,6 +23,88 @@ import {
   getAllResources,
   updateResource,
 } from "../../../../services/resourceApi";
+
+// ------------------ Custom Dropdown Component ------------------
+function CustomDropdown({ value, options, onChange, placeholder }) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef(null);
+  const selectedOption = options.find((opt) => opt.value === value);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSelect = (optionValue) => {
+    onChange(optionValue);
+    setOpen(false);
+  };
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className={`flex w-full items-center justify-between rounded-xl border border-orange-500/30 bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 px-3 py-2.5 text-sm text-white outline-none transition-all hover:border-orange-500/40 focus:ring-2 focus:ring-orange-500/20 ${
+          open ? "ring-2 ring-orange-500/20 border-orange-500/40" : ""
+        }`}
+      >
+        <span className="truncate">
+          {selectedOption ? selectedOption.label : placeholder}
+        </span>
+        <FiChevronDown
+          className={`ml-2 text-orange-400 transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {open && (
+        <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-xl border border-orange-500/30 bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 shadow-xl">
+          <div className="max-h-64 overflow-y-auto custom-scroll">
+            {options.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => handleSelect(option.value)}
+                className={`block w-full px-4 py-2.5 text-left text-sm transition-all ${
+                  option.value === value
+                    ? "bg-orange-500/20 text-orange-300 font-semibold"
+                    : "text-zinc-300 hover:bg-orange-500/10 hover:text-orange-200"
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        .custom-scroll::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+          background: rgba(255,255,255,0.05);
+          border-radius: 10px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+          background: rgba(251,146,60,0.4);
+          border-radius: 10px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+          background: rgba(251,146,60,0.6);
+        }
+      `}</style>
+    </div>
+  );
+}
+// ---------------------------------------------------------------
 
 const TYPE_STYLES = {
   LAB: {
@@ -97,6 +180,22 @@ function ResourceImageCell({ resource }) {
     </div>
   );
 }
+
+// Options for custom dropdowns
+const typeOptions = [
+  { value: "ALL", label: "All Types" },
+  { value: "LAB", label: "LAB" },
+  { value: "LECTURE_HALL", label: "LECTURE HALL" },
+  { value: "MEETING_ROOM", label: "MEETING ROOM" },
+  { value: "PROJECTOR", label: "PROJECTOR" },
+  { value: "CAMERA", label: "CAMERA" },
+];
+
+const statusOptions = [
+  { value: "ALL", label: "All Status" },
+  { value: "ACTIVE", label: "Active" },
+  { value: "OUT_OF_SERVICE", label: "Out of Service" },
+];
 
 export default function ResourceManagementPage() {
   const [resources, setResources] = useState([]);
@@ -212,12 +311,6 @@ export default function ResourceManagementPage() {
           }
         }
 
-        select option {
-          background: #0a0f1a;
-          color: #e2e8f0;
-          padding: 8px;
-        }
-
         .table-scrollbar::-webkit-scrollbar {
           height: 6px;
           width: 8px;
@@ -308,9 +401,9 @@ export default function ResourceManagementPage() {
         />
       </section>
 
-      {/* Filter Bar */}
+      {/* Filter Bar with Custom Dropdowns – added relative and z-10 */}
       <section
-        className="fade-in rounded-2xl border border-orange-500/30 bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 px-5 py-4 shadow-md"
+        className="fade-in relative z-10 rounded-2xl border border-orange-500/30 bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 px-5 py-4 shadow-md"
         style={{ animationDelay: "160ms" }}
       >
         <div className="flex flex-col items-center gap-3 md:flex-row">
@@ -329,31 +422,22 @@ export default function ResourceManagementPage() {
           </div>
 
           <div className="flex w-full gap-3 md:w-auto">
-            <div className="flex flex-1 items-center gap-2">
-              <FiFilter size={13} className="flex-shrink-0 text-orange-400" />
-              <select
+            <div className="flex-1">
+              <CustomDropdown
                 value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-                className="flex-1 cursor-pointer rounded-xl border border-orange-500/30 bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 px-3 py-2.5 text-sm text-white outline-none transition focus:border-orange-500"
-              >
-                <option value="ALL">All Types</option>
-                <option value="LAB">LAB</option>
-                <option value="LECTURE_HALL">LECTURE_HALL</option>
-                <option value="MEETING_ROOM">MEETING_ROOM</option>
-                <option value="PROJECTOR">PROJECTOR</option>
-                <option value="CAMERA">CAMERA</option>
-              </select>
+                options={typeOptions}
+                onChange={setTypeFilter}
+                placeholder="Select type"
+              />
             </div>
-
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="flex-1 cursor-pointer rounded-xl border border-orange-500/30 bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 px-3 py-2.5 text-sm text-white outline-none transition focus:border-orange-500"
-            >
-              <option value="ALL">All Status</option>
-              <option value="ACTIVE">Active</option>
-              <option value="OUT_OF_SERVICE">Out of Service</option>
-            </select>
+            <div className="flex-1">
+              <CustomDropdown
+                value={statusFilter}
+                options={statusOptions}
+                onChange={setStatusFilter}
+                placeholder="Select status"
+              />
+            </div>
           </div>
         </div>
 
@@ -416,7 +500,7 @@ export default function ResourceManagementPage() {
                 <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-orange-400">
                   Actions
                 </th>
-              </tr>
+               </tr>
             </thead>
 
             <tbody>
