@@ -109,7 +109,7 @@ export default function AdminDashboard() {
               CampusNexus Admin
             </div>
             <h1 style={{ fontFamily: "'Space Grotesk', sans-serif" }} className="text-4xl font-bold text-white leading-tight">
-              Welcome back, Admin 👋
+              Welcome back, Admin
             </h1>
             <p className="mt-2 text-orange-100 text-sm max-w-md">
               Everything looks great. Your campus resources are running smoothly with a 73% booking rate this month.
