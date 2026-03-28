@@ -3,7 +3,6 @@ import {
   FiHome,
   FiGrid,
   FiLogIn,
-  FiHeart,
   FiFacebook,
   FiTwitter,
   FiInstagram,
@@ -16,31 +15,37 @@ export default function UserLayout() {
   const location = useLocation();
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+    <div
+      className="min-h-screen flex flex-col bg-gray-50"
+      style={{ fontFamily: "'DM Sans', sans-serif" }}
+    >
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@700;800&display=swap');
-        .pulse-dot { animation: pulse 2s infinite; }
-        @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
       `}</style>
 
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-orange-500/20 bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950/90 backdrop-blur px-8 py-4 flex items-center justify-between flex-shrink-0">
+      {/* HEADER */}
+      <header className="sticky top-0 z-50 border-b border-orange-500/20 bg-gradient-to-r from-slate-950 via-blue-950 to-indigo-950 px-8 py-4 flex items-center justify-between">
+
         <div className="flex items-center gap-3">
-          {/* Logo */}
-          <img 
-            src="/Logo.png" 
-            alt="CampusNexus Logo" 
+          <img
+            src="/Logo.png"
+            alt="CampusNexus Logo"
             className="h-10 w-10 rounded-lg object-cover shadow-md"
           />
+
           <div>
-            <h2 className="text-base font-semibold text-zinc-200">CampusNexus</h2>
-            <p className="text-xs text-zinc-500">Student Portal</p>
+            <h2 className="text-base font-semibold text-zinc-200">
+              CampusNexus
+            </h2>
+            <p className="text-xs text-zinc-400">Student Portal</p>
           </div>
         </div>
+
         <div className="flex items-center gap-4">
+
           <Link
             to="/"
-            className={`flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-medium transition-all duration-200 ${
+            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition ${
               location.pathname === "/"
                 ? "bg-orange-500/20 text-orange-300"
                 : "text-zinc-400 hover:text-orange-300"
@@ -49,9 +54,10 @@ export default function UserLayout() {
             <FiHome size={16} />
             Home
           </Link>
+
           <Link
             to="/resources"
-            className={`flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-medium transition-all duration-200 ${
+            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition ${
               location.pathname === "/resources"
                 ? "bg-orange-500/20 text-orange-300"
                 : "text-zinc-400 hover:text-orange-300"
@@ -60,106 +66,139 @@ export default function UserLayout() {
             <FiGrid size={16} />
             Resources
           </Link>
+
           <Link
             to="/login"
-            className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-400 px-5 py-2 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:scale-105"
+            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-400 px-5 py-2 text-sm font-semibold text-white shadow hover:scale-105 transition"
           >
             <FiLogIn size={14} />
             Login
           </Link>
+
         </div>
       </header>
 
-      {/* Main Content – dark blue but lighter than header */}
-      <main className="flex-1 bg-gradient-to-br from-slate-800 via-blue-800 to-indigo-800 px-8 py-8">
+      {/* MAIN CONTENT AREA (LIGHT THEME) */}
+      <main className="flex-1 bg-gradient-to-br from-orange-50 via-white to-orange-100 px-8 py-10">
+
         <div className="mx-auto max-w-7xl">
           <Outlet />
         </div>
+
       </main>
 
-      {/* Footer – dark blue gradient (deep) */}
-      <footer className="border-t border-orange-500/20 bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950/90 backdrop-blur px-8 py-6">
+      {/* FOOTER */}
+      <footer className="border-t border-orange-500/20 bg-gradient-to-r from-slate-950 via-blue-950 to-indigo-950 px-8 py-8 text-white">
+
         <div className="mx-auto max-w-7xl">
-          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            {/* About Column */}
+
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
+
+            {/* ABOUT */}
             <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="rounded-xl bg-white/20 p-2">
-                  <FiGrid className="text-white" size={20} />
-                </div>
-                <h3 className="text-lg font-bold">CampusNexus</h3>
-              </div>
-              <p className="text-sm text-zinc-400 leading-relaxed">
-                Empowering students and faculty with seamless campus resource management.
+              <h3 className="text-lg font-bold mb-3">CampusNexus</h3>
+              <p className="text-sm text-zinc-400">
+                Empowering students and faculty with seamless campus resource
+                management.
               </p>
             </div>
 
-            {/* Quick Links */}
+            {/* LINKS */}
             <div>
-              <h3 className="text-lg font-bold mb-4">Quick Links</h3>
+              <h3 className="text-lg font-bold mb-3">Quick Links</h3>
+
               <ul className="space-y-2 text-sm text-zinc-400">
-                <li><Link to="/" className="hover:text-orange-400 transition-colors">Home</Link></li>
-                <li><Link to="/resources" className="hover:text-orange-400 transition-colors">Resources</Link></li>
-                <li><Link to="/about" className="hover:text-orange-400 transition-colors">About Us</Link></li>
-                <li><Link to="/contact" className="hover:text-orange-400 transition-colors">Contact</Link></li>
+                <li>
+                  <Link to="/" className="hover:text-orange-400">
+                    Home
+                  </Link>
+                </li>
+
+                <li>
+                  <Link to="/resources" className="hover:text-orange-400">
+                    Resources
+                  </Link>
+                </li>
+
+                <li>
+                  <Link to="/about" className="hover:text-orange-400">
+                    About
+                  </Link>
+                </li>
+
+                <li>
+                  <Link to="/contact" className="hover:text-orange-400">
+                    Contact
+                  </Link>
+                </li>
               </ul>
             </div>
 
-            {/* Contact Info */}
+            {/* CONTACT */}
             <div>
-              <h3 className="text-lg font-bold mb-4">Contact Us</h3>
+              <h3 className="text-lg font-bold mb-3">Contact</h3>
+
               <ul className="space-y-2 text-sm text-zinc-400">
+
                 <li className="flex items-center gap-2">
                   <FiMapPin size={14} />
-                  <span>123 University Ave, City, State 12345</span>
+                  <span>SLIIT Malabe Campus</span>
                 </li>
+
                 <li className="flex items-center gap-2">
                   <FiPhone size={14} />
-                  <span>+1 (555) 123-4567</span>
+                  <span>+94 11 754 4801</span>
                 </li>
+
                 <li className="flex items-center gap-2">
                   <FiMail size={14} />
                   <span>support@campusnexus.edu</span>
                 </li>
+
               </ul>
             </div>
 
-            {/* Social & Newsletter */}
+            {/* SOCIAL */}
             <div>
-              <h3 className="text-lg font-bold mb-4">Follow Us</h3>
-              <div className="flex gap-4 mb-6">
-                <a href="#" className="rounded-full bg-white/20 p-2 hover:bg-white/30 transition-all">
+              <h3 className="text-lg font-bold mb-3">Follow Us</h3>
+
+              <div className="flex gap-3">
+
+                <a
+                  href="#"
+                  className="rounded-full bg-white/10 p-2 hover:bg-orange-500 transition"
+                >
                   <FiFacebook size={18} />
                 </a>
-                <a href="#" className="rounded-full bg-white/20 p-2 hover:bg-white/30 transition-all">
+
+                <a
+                  href="#"
+                  className="rounded-full bg-white/10 p-2 hover:bg-orange-500 transition"
+                >
                   <FiTwitter size={18} />
                 </a>
-                <a href="#" className="rounded-full bg-white/20 p-2 hover:bg-white/30 transition-all">
+
+                <a
+                  href="#"
+                  className="rounded-full bg-white/10 p-2 hover:bg-orange-500 transition"
+                >
                   <FiInstagram size={18} />
                 </a>
-              </div>
-              <h3 className="text-lg font-bold mb-2">Newsletter</h3>
-              <div className="flex">
-                <input
-                  type="email"
-                  placeholder="Your email"
-                  className="flex-1 rounded-l-xl border border-white/30 bg-white/10 px-4 py-2 text-sm text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-orange-500/50"
-                />
-                <button className="rounded-r-xl bg-orange-500/20 px-4 py-2 text-sm font-medium text-orange-300 hover:bg-orange-500/30 transition-all">
-                  Subscribe
-                </button>
+
               </div>
             </div>
+
           </div>
 
-          {/* Bottom Bar */}
+          {/* COPYRIGHT */}
           <div className="mt-8 border-t border-white/10 pt-6 text-center text-sm text-zinc-500">
-            <div className="flex items-center justify-center gap-2">
-              <span>© 2024 CampusNexus. All rights reserved.</span>
-            </div>
+            © 2026 CampusNexus — University Resource Management System
           </div>
+
         </div>
+
       </footer>
+
     </div>
   );
 }

@@ -3,28 +3,37 @@ import UserResourceCard from "./UserResourceCard";
 export default function UserResourceList({ resources, loading }) {
   if (loading) {
     return (
-      <div className="rounded-3xl border border-dashed border-orange-500/30 bg-gradient-to-br from-slate-950/90 via-blue-950/90 to-indigo-950/90 backdrop-blur px-4 py-12 text-center text-gray-400">
-        <div className="flex flex-col items-center gap-2">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-orange-500/30 border-t-orange-500"></div>
-          <p>Loading resources...</p>
+      <div className="rounded-3xl border border-dashed border-orange-200 bg-white px-4 py-14 text-center text-slate-500 shadow-sm">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-orange-200 border-t-orange-500"></div>
+          <p className="text-sm tracking-wide">Loading campus resources...</p>
         </div>
       </div>
     );
   }
 
-  if (resources.length === 0) {
+  if (!resources || resources.length === 0) {
     return (
-      <div className="rounded-3xl border border-dashed border-orange-500/30 bg-gradient-to-br from-slate-950/90 via-blue-950/90 to-indigo-950/90 backdrop-blur px-4 py-12 text-center text-gray-400">
-        <p>No resources found.</p>
-        <p className="text-sm">Try adjusting your filters or check back later.</p>
+      <div className="rounded-3xl border border-dashed border-orange-200 bg-white px-4 py-14 text-center text-slate-500 shadow-sm">
+        <div className="flex flex-col items-center gap-2">
+          <p className="text-lg font-semibold text-slate-700">
+            No Resources Found
+          </p>
+          <p className="text-sm text-slate-500">
+            Try adjusting filters or check back later.
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+    <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
       {resources.map((resource) => (
-        <UserResourceCard key={resource.id} resource={resource} />
+        <UserResourceCard
+          key={resource.id}
+          resource={resource}
+        />
       ))}
     </div>
   );
