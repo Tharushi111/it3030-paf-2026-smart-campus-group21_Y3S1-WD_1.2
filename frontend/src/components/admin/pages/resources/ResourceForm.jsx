@@ -1,5 +1,13 @@
 import { useState } from "react";
-import { FiX, FiPlus, FiType, FiMapPin, FiUsers, FiToggleRight } from "react-icons/fi";
+import {
+  FiX,
+  FiPlus,
+  FiType,
+  FiMapPin,
+  FiUsers,
+  FiToggleRight,
+  FiImage
+} from "react-icons/fi";
 import toast from "react-hot-toast";
 
 const initialForm = {
@@ -8,32 +16,38 @@ const initialForm = {
   capacity: "",
   location: "",
   status: "ACTIVE",
+  image: null
 };
 
 const TYPES = ["LAB", "LECTURE_HALL", "MEETING_ROOM", "PROJECTOR", "CAMERA"];
 
 export default function AddResourceModal({ onClose, onSave }) {
   const [form, setForm] = useState(initialForm);
+  const [preview, setPreview] = useState(null);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
-    // Clear error for this field when user starts typing
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setForm((prev) => ({ ...prev, image: file }));
+    setPreview(URL.createObjectURL(file));
   };
 
   const validateForm = () => {
     const newErrors = {};
     if (!form.name.trim()) newErrors.name = "Resource name is required";
     if (!form.location.trim()) newErrors.location = "Location is required";
-    if (!form.capacity || Number(form.capacity) <= 0) newErrors.capacity = "Capacity must be a positive number";
-    if (!form.type) newErrors.type = "Type is required";
-    if (!form.status) newErrors.status = "Status is required";
-
+    if (!form.capacity || Number(form.capacity) <= 0)
+      newErrors.capacity = "Capacity must be positive";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -41,157 +55,159 @@ export default function AddResourceModal({ onClose, onSave }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-
     setSubmitting(true);
     try {
-      await onSave({ ...form, capacity: Number(form.capacity) });
+      const formData = new FormData();
+      formData.append("name", form.name);
+      formData.append("type", form.type);
+      formData.append("capacity", form.capacity);
+      formData.append("location", form.location);
+      formData.append("status", form.status);
+      if (form.image) {
+        formData.append("image", form.image);
+      }
+      await onSave(formData);
+      onClose(); // close modal after success
+    } catch (error) {
+      toast.error("Failed to create resource");
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
-      style={{ fontFamily: "'DM Sans', sans-serif" }}
-    >
-      <div className="w-full max-w-md rounded-3xl border border-orange-500/20 bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 shadow-2xl">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-6 pb-5 border-b border-orange-500/20">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-amber-400 flex items-center justify-center shadow-lg shadow-orange-500/30">
-              <FiPlus className="text-white" size={18} />
-            </div>
-            <div>
-              <h2 style={{ fontFamily: "'Space Grotesk', sans-serif" }} className="text-lg font-bold text-white leading-none">
-                Add New Resource
-              </h2>
-              <p className="text-xs text-zinc-500 mt-0.5">Fill in the details below</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-lg bg-white/[0.04] border border-orange-500/30 flex items-center justify-center text-zinc-500 hover:text-white hover:bg-white/[0.08] transition-all"
-          >
-            <FiX size={16} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+      <div className="w-full max-w-md rounded-3xl border border-orange-500/20 bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 shadow-2xl max-h-[90vh] flex flex-col">
+        {/* HEADER – sticky */}
+        <div className="flex justify-between items-center px-6 pt-6 pb-4 border-b border-orange-500/20 sticky top-0 bg-inherit z-10">
+          <h2 className="text-white text-lg font-bold">Add Resource</h2>
+          <button onClick={onClose} className="text-zinc-400 hover:text-white">
+            <FiX size={20} />
           </button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
-          {/* Name */}
-          <div>
-            <label className="flex items-center gap-1.5 text-xs font-semibold text-orange-400/80 mb-2 uppercase tracking-wider">
-              <FiType size={11} /> Resource Name <span className="text-red-500 ml-1">*</span>
-            </label>
-            <input
-              type="text"
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              placeholder="e.g. Engineering Lab 01"
-              className={`w-full bg-white/[0.03] border ${errors.name ? "border-red-500/70" : "border-orange-500/30"} rounded-xl px-4 py-2.5 text-white placeholder-zinc-600 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition`}
-            />
-            {errors.name && <p className="text-xs text-red-400 mt-1">{errors.name}</p>}
-          </div>
-
-          {/* Type + Capacity */}
-          <div className="grid grid-cols-2 gap-3">
+        {/* SCROLLABLE FORM AREA */}
+        <div className="overflow-y-auto flex-1 px-6 py-5 space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Name */}
             <div>
-              <label className="flex items-center gap-1.5 text-xs font-semibold text-orange-400/80 mb-2 uppercase tracking-wider">
-                Type <span className="text-red-500 ml-1">*</span>
+              <label className="text-orange-400 text-xs font-semibold flex items-center gap-1">
+                <FiType size={12} /> Resource Name
+              </label>
+              <input
+                type="text"
+                name="name"
+                value={form.name}
+                onChange={handleChange}
+                className="w-full bg-white/5 border border-orange-500/30 rounded-xl px-4 py-2 text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500"
+                placeholder="e.g. Engineering Lab 01"
+              />
+              {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name}</p>}
+            </div>
+
+            {/* Type */}
+            <div>
+              <label className="text-orange-400 text-xs font-semibold flex items-center gap-1">
+                Type
               </label>
               <select
                 name="type"
                 value={form.type}
                 onChange={handleChange}
-                className={`w-full bg-white/[0.03] border ${errors.type ? "border-red-500/70" : "border-orange-500/30"} rounded-xl px-4 py-2.5 text-white outline-none focus:border-orange-500 transition cursor-pointer`}
+                className="w-full bg-white/5 border border-orange-500/30 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-orange-500"
               >
                 {TYPES.map((t) => (
-                  <option key={t} value={t} className="bg-slate-950 text-white">
-                    {t}
-                  </option>
+                  <option key={t} value={t}>{t}</option>
                 ))}
               </select>
-              {errors.type && <p className="text-xs text-red-400 mt-1">{errors.type}</p>}
             </div>
+
+            {/* Capacity */}
             <div>
-              <label className="flex items-center gap-1.5 text-xs font-semibold text-orange-400/80 mb-2 uppercase tracking-wider">
-                <FiUsers size={11} /> Capacity <span className="text-red-500 ml-1">*</span>
+              <label className="text-orange-400 text-xs font-semibold flex items-center gap-1">
+                <FiUsers size={12} /> Capacity
               </label>
               <input
                 type="number"
                 name="capacity"
                 value={form.capacity}
                 onChange={handleChange}
+                className="w-full bg-white/5 border border-orange-500/30 rounded-xl px-4 py-2 text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500"
                 placeholder="e.g. 40"
-                className={`w-full bg-white/[0.03] border ${errors.capacity ? "border-red-500/70" : "border-orange-500/30"} rounded-xl px-4 py-2.5 text-white placeholder-zinc-600 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition`}
               />
-              {errors.capacity && <p className="text-xs text-red-400 mt-1">{errors.capacity}</p>}
+              {errors.capacity && <p className="text-red-400 text-xs mt-1">{errors.capacity}</p>}
             </div>
-          </div>
 
-          {/* Location */}
-          <div>
-            <label className="flex items-center gap-1.5 text-xs font-semibold text-orange-400/80 mb-2 uppercase tracking-wider">
-              <FiMapPin size={11} /> Location <span className="text-red-500 ml-1">*</span>
-            </label>
-            <input
-              type="text"
-              name="location"
-              value={form.location}
-              onChange={handleChange}
-              placeholder="e.g. Building A - Floor 2"
-              className={`w-full bg-white/[0.03] border ${errors.location ? "border-red-500/70" : "border-orange-500/30"} rounded-xl px-4 py-2.5 text-white placeholder-zinc-600 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition`}
-            />
-            {errors.location && <p className="text-xs text-red-400 mt-1">{errors.location}</p>}
-          </div>
-
-          {/* Status */}
-          <div>
-            <label className="flex items-center gap-1.5 text-xs font-semibold text-orange-400/80 mb-2 uppercase tracking-wider">
-              <FiToggleRight size={11} /> Status <span className="text-red-500 ml-1">*</span>
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {["ACTIVE", "OUT_OF_SERVICE"].map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setForm((prev) => ({ ...prev, status: s }))}
-                  className={`px-3 py-2.5 rounded-xl text-xs font-semibold border transition-all ${
-                    form.status === s
-                      ? s === "ACTIVE"
-                        ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
-                        : "bg-red-500/20 border-red-500/40 text-red-300"
-                      : "bg-white/[0.03] border-orange-500/20 text-zinc-500 hover:border-orange-500/40"
-                  }`}
-                >
-                  {s === "ACTIVE" ? "● Active" : "● Out of Service"}
-                </button>
-              ))}
+            {/* Location */}
+            <div>
+              <label className="text-orange-400 text-xs font-semibold flex items-center gap-1">
+                <FiMapPin size={12} /> Location
+              </label>
+              <input
+                type="text"
+                name="location"
+                value={form.location}
+                onChange={handleChange}
+                className="w-full bg-white/5 border border-orange-500/30 rounded-xl px-4 py-2 text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500"
+                placeholder="e.g. Building A - Floor 2"
+              />
+              {errors.location && <p className="text-red-400 text-xs mt-1">{errors.location}</p>}
             </div>
-            {errors.status && <p className="text-xs text-red-400 mt-1">{errors.status}</p>}
-          </div>
 
-          {/* Actions */}
-          <div className="flex gap-3 pt-2">
+            {/* Status */}
+            <div>
+              <label className="text-orange-400 text-xs font-semibold flex items-center gap-1">
+                <FiToggleRight size={12} /> Status
+              </label>
+              <select
+                name="status"
+                value={form.status}
+                onChange={handleChange}
+                className="w-full bg-white/5 border border-orange-500/30 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-orange-500"
+              >
+                <option value="ACTIVE">ACTIVE</option>
+                <option value="OUT_OF_SERVICE">OUT OF SERVICE</option>
+              </select>
+            </div>
+
+            {/* Image */}
+            <div>
+              <label className="text-orange-400 text-xs font-semibold flex items-center gap-1">
+                <FiImage size={12} /> Resource Image
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="text-white text-sm w-full bg-white/5 border border-orange-500/30 rounded-xl px-4 py-2 file:mr-4 file:py-1 file:px-2 file:rounded-lg file:border-0 file:bg-orange-500 file:text-white hover:file:bg-orange-600"
+              />
+              {preview && (
+                <img src={preview} alt="preview" className="mt-3 rounded-xl max-h-40 w-auto object-cover border border-orange-500/30" />
+              )}
+            </div>
+          </form>
+        </div>
+
+        {/* BUTTONS – sticky bottom */}
+        <div className="px-6 pb-6 pt-2 border-t border-orange-500/20 sticky bottom-0 bg-inherit">
+          <div className="flex gap-3">
             <button
               type="submit"
               disabled={submitting}
-              className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-amber-400 text-white font-semibold text-sm shadow-lg shadow-orange-500/20 hover:shadow-orange-500/35 hover:scale-[1.01] transition-all disabled:opacity-60"
+              onClick={handleSubmit}
+              className="flex-1 bg-gradient-to-r from-orange-500 to-amber-400 text-white py-3 rounded-xl font-semibold hover:scale-105 transition-all disabled:opacity-60"
             >
-              <FiPlus size={15} />
               {submitting ? "Creating..." : "Create Resource"}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-3 rounded-xl bg-white/[0.04] border border-orange-500/30 text-zinc-400 text-sm font-semibold hover:text-white hover:bg-white/[0.07] transition-all"
+              className="flex-1 bg-white/10 border border-orange-500/30 text-white py-3 rounded-xl font-semibold hover:bg-white/20 transition-all"
             >
               Cancel
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

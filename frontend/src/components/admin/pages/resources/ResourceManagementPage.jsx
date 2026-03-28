@@ -1,4 +1,3 @@
-// ResourceManagementPage.jsx
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import {
@@ -13,6 +12,7 @@ import {
   FiAlertCircle,
   FiFilter,
   FiLayers,
+  FiImage,
 } from "react-icons/fi";
 import AddResourceModal from "./ResourceForm";
 import EditResourceModal from "./EditResourceModal";
@@ -24,24 +24,76 @@ import {
 } from "../../../../services/resourceApi";
 
 const TYPE_STYLES = {
-  LAB: { bg: "bg-blue-500/15", text: "text-blue-300", border: "border-blue-500/30" },
-  LECTURE_HALL: { bg: "bg-violet-500/15", text: "text-violet-300", border: "border-violet-500/30" },
-  MEETING_ROOM: { bg: "bg-teal-500/15", text: "text-teal-300", border: "border-teal-500/30" },
-  PROJECTOR: { bg: "bg-amber-500/15", text: "text-amber-300", border: "border-amber-500/30" },
-  CAMERA: { bg: "bg-rose-500/15", text: "text-rose-300", border: "border-rose-500/30" },
+  LAB: {
+    bg: "bg-blue-500/15",
+    text: "text-blue-300",
+    border: "border-blue-500/30",
+  },
+  LECTURE_HALL: {
+    bg: "bg-violet-500/15",
+    text: "text-violet-300",
+    border: "border-violet-500/30",
+  },
+  MEETING_ROOM: {
+    bg: "bg-teal-500/15",
+    text: "text-teal-300",
+    border: "border-teal-500/30",
+  },
+  PROJECTOR: {
+    bg: "bg-amber-500/15",
+    text: "text-amber-300",
+    border: "border-amber-500/30",
+  },
+  CAMERA: {
+    bg: "bg-rose-500/15",
+    text: "text-rose-300",
+    border: "border-rose-500/30",
+  },
 };
 
 function StatCard({ title, value, subtitle, icon, gradient, border }) {
   return (
-    <div className={`rounded-2xl border ${border} p-5 shadow-xl bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 transition-all hover:translate-y-[-2px]`}>
-      <div className="flex items-start justify-between mb-3">
-        <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center text-white shadow-lg text-lg`}>
+    <div
+      className={`rounded-2xl border ${border} p-5 shadow-xl bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 transition-all hover:-translate-y-[2px]`}
+    >
+      <div className="mb-3 flex items-start justify-between">
+        <div
+          className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} text-lg text-white shadow-lg`}
+        >
           {icon}
         </div>
       </div>
       <p className="text-3xl font-bold text-white">{value}</p>
-      <p className="text-sm font-semibold text-zinc-300 mt-1">{title}</p>
-      <p className="text-xs text-zinc-500 mt-0.5">{subtitle}</p>
+      <p className="mt-1 text-sm font-semibold text-zinc-300">{title}</p>
+      <p className="mt-0.5 text-xs text-zinc-500">{subtitle}</p>
+    </div>
+  );
+}
+
+function ResourceImageCell({ resource }) {
+  const imageSrc = resource.imageUrl
+    ? `http://localhost:9090${resource.imageUrl}`
+    : null;
+
+  return (
+    <div className="flex items-center gap-3">
+      <div className="h-14 w-20 overflow-hidden rounded-xl border border-orange-500/20 bg-white/[0.04]">
+        {imageSrc ? (
+          <img
+            src={imageSrc}
+            alt={resource.name}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-zinc-500">
+            <FiImage size={16} />
+          </div>
+        )}
+      </div>
+      <div>
+        <p className="font-medium text-white">{resource.name}</p>
+        <p className="text-xs text-zinc-500">ID: {resource.id}</p>
+      </div>
     </div>
   );
 }
@@ -67,40 +119,44 @@ export default function ResourceManagementPage() {
     }
   };
 
-  useEffect(() => { fetchResources(); }, []);
+  useEffect(() => {
+    fetchResources();
+  }, []);
 
-  const handleAddResource = async (payload) => {
+  const handleAddResource = async (formData) => {
     try {
-      await createResource(payload);
-      toast.success("Resource created successfully!");
+      await createResource(formData);
+      toast.success("Resource created successfully");
       setAddModalOpen(false);
       fetchResources();
-    } catch {
+    } catch (error) {
+      console.error(error);
       toast.error("Failed to create resource");
     }
   };
 
-  const handleSaveEdit = async (updatedResource) => {
+  const handleSaveEdit = async (id, formData) => {
     try {
-      await updateResource(updatedResource.id, {
-        ...updatedResource,
-        capacity: Number(updatedResource.capacity),
-      });
-      toast.success("Resource updated!");
+      await updateResource(id, formData);
+      toast.success("Resource updated successfully");
       setEditingResource(null);
       fetchResources();
-    } catch {
+    } catch (error) {
+      console.error(error);
       toast.error("Failed to update resource");
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this resource?")) return;
+    const confirmed = window.confirm("Delete this resource?");
+    if (!confirmed) return;
+
     try {
       await deleteResource(id);
       toast.success("Resource deleted");
       fetchResources();
-    } catch {
+    } catch (error) {
+      console.error(error);
       toast.error("Failed to delete resource");
     }
   };
@@ -111,76 +167,113 @@ export default function ResourceManagementPage() {
         item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.type?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === "ALL" || item.status === statusFilter;
+
+      const matchesStatus =
+        statusFilter === "ALL" || item.status === statusFilter;
+
       const matchesType = typeFilter === "ALL" || item.type === typeFilter;
+
       return matchesSearch && matchesStatus && matchesType;
     });
   }, [resources, searchTerm, statusFilter, typeFilter]);
 
   const activeCount = resources.filter((r) => r.status === "ACTIVE").length;
-  const outOfServiceCount = resources.filter((r) => r.status === "OUT_OF_SERVICE").length;
-  const totalCapacity = resources.reduce((sum, r) => sum + (Number(r.capacity) || 0), 0);
+  const outOfServiceCount = resources.filter(
+    (r) => r.status === "OUT_OF_SERVICE"
+  ).length;
+  const totalCapacity = resources.reduce(
+    (sum, r) => sum + (Number(r.capacity) || 0),
+    0
+  );
 
   return (
     <div className="space-y-8" style={{ fontFamily: "'DM Sans', sans-serif" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@700;800&display=swap');
-        .resource-row:hover { background: rgba(251,146,60,0.05); border-color: rgba(251,146,60,0.3); transform: translateX(2px); }
-        .fade-in { animation: fadeUp 0.4s ease both; }
-        @keyframes fadeUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:none; } }
-        
-        /* Style the dropdown options to match the page background */
+
+        .resource-row:hover {
+          background: rgba(251, 146, 60, 0.05);
+          border-color: rgba(251, 146, 60, 0.3);
+          transform: translateX(2px);
+        }
+
+        .fade-in {
+          animation: fadeUp 0.4s ease both;
+        }
+
+        @keyframes fadeUp {
+          from {
+            opacity: 0;
+            transform: translateY(14px);
+          }
+          to {
+            opacity: 1;
+            transform: none;
+          }
+        }
+
         select option {
           background: #0a0f1a;
           color: #e2e8f0;
           padding: 8px;
         }
-        select option:hover {
-          background: rgba(251,146,60,0.2);
-        }
 
-        /* Custom scrollbar for the table container - neutral, no orange */
         .table-scrollbar::-webkit-scrollbar {
           height: 6px;
+          width: 8px;
         }
+
         .table-scrollbar::-webkit-scrollbar-track {
           background: rgba(255,255,255,0.05);
           border-radius: 10px;
         }
+
         .table-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(255,255,255,0.2);
+          background: rgba(251,146,60,0.35);
           border-radius: 10px;
         }
+
         .table-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(255,255,255,0.3);
+          background: rgba(251,146,60,0.5);
         }
       `}</style>
 
       {/* Page Header */}
-      <section className="flex items-center justify-between fade-in">
+      <section className="fade-in flex items-center justify-between">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-orange-500 to-amber-400 flex items-center justify-center">
+          <div className="mb-1 flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-amber-400">
               <FiLayers size={14} className="text-white" />
             </div>
-            <span className="text-xs font-bold text-orange-400 tracking-widest uppercase">Resource Module</span>
+            <span className="text-xs font-bold uppercase tracking-widest text-orange-400">
+              Resource Module
+            </span>
           </div>
-          <h1 style={{ fontFamily: "'Space Grotesk', sans-serif" }} className="text-3xl font-bold text-white">
+          <h1
+            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+            className="text-3xl font-bold text-white"
+          >
             Resource Management
           </h1>
-          <p className="text-sm text-zinc-500 mt-1">Manage all campus facilities, labs, and equipment</p>
+          <p className="mt-1 text-sm text-zinc-500">
+            Manage campus facilities, equipment, and uploaded resource images
+          </p>
         </div>
+
         <button
           onClick={() => setAddModalOpen(true)}
-          className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-amber-400 text-white font-semibold text-sm shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 hover:scale-[1.02] transition-all"
+          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-400 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/25 transition-all hover:scale-[1.02] hover:shadow-orange-500/40"
         >
           <FiPlus size={16} />
           Add Resource
         </button>
       </section>
 
-      {/* Stats Cards */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 fade-in" style={{ animationDelay: "80ms" }}>
+      {/* Stats */}
+      <section
+        className="fade-in grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"
+        style={{ animationDelay: "80ms" }}
+      >
         <StatCard
           title="Total Resources"
           value={resources.length}
@@ -215,26 +308,33 @@ export default function ResourceManagementPage() {
         />
       </section>
 
-      {/* Filter Bar - Enhanced with orange border */}
-      <section className="fade-in rounded-2xl border border-orange-500/30 bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 px-5 py-4 shadow-md" style={{ animationDelay: "160ms" }}>
-        <div className="flex flex-col md:flex-row gap-3 items-center">
-          <div className="relative flex-1 w-full">
-            <FiSearch size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-orange-400 pointer-events-none" />
+      {/* Filter Bar */}
+      <section
+        className="fade-in rounded-2xl border border-orange-500/30 bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 px-5 py-4 shadow-md"
+        style={{ animationDelay: "160ms" }}
+      >
+        <div className="flex flex-col items-center gap-3 md:flex-row">
+          <div className="relative w-full flex-1">
+            <FiSearch
+              size={14}
+              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-orange-400"
+            />
             <input
               type="text"
               placeholder="Search by name, location, or type..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-white/[0.04] border border-orange-500/30 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-zinc-500 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition"
+              className="w-full rounded-xl border border-orange-500/30 bg-white/[0.04] py-2.5 pl-10 pr-4 text-sm text-white placeholder-zinc-500 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
             />
           </div>
-          <div className="flex gap-3 w-full md:w-auto">
-            <div className="flex items-center gap-2 flex-1">
-              <FiFilter size={13} className="text-orange-400 flex-shrink-0" />
+
+          <div className="flex w-full gap-3 md:w-auto">
+            <div className="flex flex-1 items-center gap-2">
+              <FiFilter size={13} className="flex-shrink-0 text-orange-400" />
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className="flex-1 bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 border border-orange-500/30 rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-orange-500 transition cursor-pointer"
+                className="flex-1 cursor-pointer rounded-xl border border-orange-500/30 bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 px-3 py-2.5 text-sm text-white outline-none transition focus:border-orange-500"
               >
                 <option value="ALL">All Types</option>
                 <option value="LAB">LAB</option>
@@ -244,10 +344,11 @@ export default function ResourceManagementPage() {
                 <option value="CAMERA">CAMERA</option>
               </select>
             </div>
+
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="flex-1 bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 border border-orange-500/30 rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-orange-500 transition cursor-pointer"
+              className="flex-1 cursor-pointer rounded-xl border border-orange-500/30 bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 px-3 py-2.5 text-sm text-white outline-none transition focus:border-orange-500"
             >
               <option value="ALL">All Status</option>
               <option value="ACTIVE">Active</option>
@@ -255,26 +356,40 @@ export default function ResourceManagementPage() {
             </select>
           </div>
         </div>
-        <div className="flex items-center gap-1 mt-3 text-xs text-zinc-500">
-          Showing <span className="text-orange-400 font-semibold mx-1">{filteredResources.length}</span> of <span className="text-orange-400 font-semibold mx-1">{resources.length}</span> resources
+
+        <div className="mt-3 flex items-center gap-1 text-xs text-zinc-500">
+          Showing
+          <span className="mx-1 font-semibold text-orange-400">
+            {filteredResources.length}
+          </span>
+          of
+          <span className="mx-1 font-semibold text-orange-400">
+            {resources.length}
+          </span>
+          resources
         </div>
       </section>
 
       {/* Resource Table */}
-      <section className="fade-in rounded-2xl border border-white/[0.07] bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 table-scrollbar overflow-x-auto" style={{ animationDelay: "240ms" }}>
+      <section
+        className="table-scrollbar fade-in overflow-x-auto rounded-2xl border border-white/[0.07] bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950"
+        style={{ animationDelay: "240ms" }}
+      >
         {loading ? (
           <div className="px-6 py-16 text-center">
-            <div className="w-10 h-10 border-2 border-orange-500/30 border-t-orange-400 rounded-full animate-spin mx-auto mb-3" />
-            <p className="text-zinc-500 text-sm">Loading resources...</p>
+            <div className="mx-auto mb-3 h-10 w-10 animate-spin rounded-full border-2 border-orange-500/30 border-t-orange-400" />
+            <p className="text-sm text-zinc-500">Loading resources...</p>
           </div>
         ) : filteredResources.length === 0 ? (
           <div className="px-6 py-16 text-center">
-            <FiBox size={32} className="text-zinc-700 mx-auto mb-3" />
-            <p className="text-zinc-400 font-semibold">No resources found</p>
-            <p className="text-zinc-600 text-sm mt-1">Try adjusting your filters or add a new resource</p>
+            <FiBox size={32} className="mx-auto mb-3 text-zinc-700" />
+            <p className="font-semibold text-zinc-400">No resources found</p>
+            <p className="mt-1 text-sm text-zinc-600">
+              Try adjusting your filters or add a new resource
+            </p>
             <button
               onClick={() => setAddModalOpen(true)}
-              className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-500/15 border border-orange-500/20 text-orange-300 text-sm font-semibold hover:bg-orange-500/25 transition"
+              className="mt-4 inline-flex items-center gap-2 rounded-xl border border-orange-500/20 bg-orange-500/15 px-4 py-2 text-sm font-semibold text-orange-300 transition hover:bg-orange-500/25"
             >
               <FiPlus size={14} /> Add Resource
             </button>
@@ -283,52 +398,97 @@ export default function ResourceManagementPage() {
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-orange-500/20 bg-white/[0.02]">
-                <th className="px-6 py-4 text-xs font-semibold text-orange-400 uppercase tracking-wider">Name</th>
-                <th className="px-6 py-4 text-xs font-semibold text-orange-400 uppercase tracking-wider">Type</th>
-                <th className="px-6 py-4 text-xs font-semibold text-orange-400 uppercase tracking-wider">Capacity</th>
-                <th className="px-6 py-4 text-xs font-semibold text-orange-400 uppercase tracking-wider">Location</th>
-                <th className="px-6 py-4 text-xs font-semibold text-orange-400 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-4 text-xs font-semibold text-orange-400 uppercase tracking-wider text-right">Actions</th>
-               </tr>
+                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-orange-400">
+                  Resource
+                </th>
+                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-orange-400">
+                  Type
+                </th>
+                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-orange-400">
+                  Capacity
+                </th>
+                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-orange-400">
+                  Location
+                </th>
+                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-orange-400">
+                  Status
+                </th>
+                <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-orange-400">
+                  Actions
+                </th>
+              </tr>
             </thead>
+
             <tbody>
               {filteredResources.map((resource) => {
-                const typeStyle = TYPE_STYLES[resource.type] || { bg: "bg-zinc-700/20", text: "text-zinc-300", border: "border-zinc-500/30" };
+                const typeStyle = TYPE_STYLES[resource.type] || {
+                  bg: "bg-zinc-700/20",
+                  text: "text-zinc-300",
+                  border: "border-zinc-500/30",
+                };
+
                 return (
-                  <tr key={resource.id} className="resource-row border-b border-white/[0.05] hover:bg-orange-500/5 transition-all">
-                    <td className="px-6 py-4 font-medium text-white">{resource.name}</td>
+                  <tr
+                    key={resource.id}
+                    className="resource-row border-b border-white/[0.05] transition-all hover:bg-orange-500/5"
+                  >
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold ${typeStyle.bg} ${typeStyle.text} border ${typeStyle.border}`}>
+                      <ResourceImageCell resource={resource} />
+                    </td>
+
+                    <td className="px-6 py-4">
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold ${typeStyle.bg} ${typeStyle.text} ${typeStyle.border}`}
+                      >
                         {resource.type}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-zinc-300">{resource.capacity}</td>
-                    <td className="px-6 py-4 text-zinc-300 flex items-center gap-2">
-                      <FiMapPin className="text-orange-400" size={14} />
-                      <span>{resource.location}</span>
+
+                    <td className="px-6 py-4 text-zinc-300">
+                      {resource.capacity}
                     </td>
+
+                    <td className="px-6 py-4 text-zinc-300">
+                      <div className="flex items-center gap-2">
+                        <FiMapPin className="text-orange-400" size={14} />
+                        <span>{resource.location}</span>
+                      </div>
+                    </td>
+
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold ${
-                        resource.status === "ACTIVE"
-                          ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
-                          : "bg-red-500/15 text-red-300 border border-red-500/30"
-                      }`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${resource.status === "ACTIVE" ? "bg-emerald-400" : "bg-red-400"}`} />
-                        {resource.status === "ACTIVE" ? "Active" : "Out of Service"}
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold ${
+                          resource.status === "ACTIVE"
+                            ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-300"
+                            : "border-red-500/30 bg-red-500/15 text-red-300"
+                        }`}
+                      >
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${
+                            resource.status === "ACTIVE"
+                              ? "bg-emerald-400"
+                              : "bg-red-400"
+                          }`}
+                        />
+                        {resource.status === "ACTIVE"
+                          ? "Active"
+                          : "Out of Service"}
                       </span>
                     </td>
+
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
                         <button
                           onClick={() => setEditingResource(resource)}
-                          className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 hover:bg-amber-500/20 transition"
+                          className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-2 text-amber-300 transition hover:bg-amber-500/20"
                           title="Edit"
                         >
                           <FiEdit2 size={14} />
                         </button>
+
                         <button
                           onClick={() => handleDelete(resource.id)}
-                          className="p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-300 hover:bg-red-500/20 transition"
+                          className="rounded-lg border border-red-500/20 bg-red-500/10 p-2 text-red-300 transition hover:bg-red-500/20"
                           title="Delete"
                         >
                           <FiTrash2 size={14} />
@@ -350,6 +510,7 @@ export default function ResourceManagementPage() {
           onSave={handleAddResource}
         />
       )}
+
       {editingResource && (
         <EditResourceModal
           resource={editingResource}
