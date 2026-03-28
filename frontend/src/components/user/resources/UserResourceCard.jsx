@@ -32,7 +32,7 @@ export default function UserResourceCard({ resource }) {
           )}
 
           {/* Type badge */}
-          <div className="absolute left-3 top-3 rounded-full bg-orange-500 px-3 py-1 text-xs font-semibold text-white shadow">
+          <div className="absolute left-3 top-3 rounded-full bg-gradient-to-r from-orange-500 to-amber-400 px-3 py-1.5 text-xs font-bold text-white shadow-lg">
             {resource.type}
           </div>
         </div>
