@@ -2,7 +2,7 @@ import { Routes, Route, Outlet, Navigate } from "react-router-dom";
 import HomePage from "./components/Home.jsx";
 import LoginPage from "./components/login.jsx";
 import UserDashboard from "./components/user/UserDashboard.jsx";
-import UserResourcesPage from "./components/user/UserResourcesPage.jsx";
+import UserResourcesPage from "./components/user/resources/UserResourcesPage.jsx";
 import AdminDashboard from "./components/admin/AdminDashboard.jsx";
 import ResourceManagementPage from "./components/admin/pages/resources/ResourceManagementPage.jsx";
 import UserLayout from "./components/layout/UserLayout.jsx";
