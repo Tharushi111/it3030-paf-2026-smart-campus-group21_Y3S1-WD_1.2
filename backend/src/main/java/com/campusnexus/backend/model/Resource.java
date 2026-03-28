@@ -32,4 +32,6 @@ public class Resource {
 
     @NotBlank(message = "Status is required")
     private String status;
+
+    private String imageUrl;
 }
