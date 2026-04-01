@@ -1,9 +1,9 @@
 package com.campusnexus.backend.model;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 
 @Entity
@@ -18,16 +18,25 @@ public class Resource {
     private Long id;
 
     @NotBlank(message = "Resource name is required")
+    @Size(max = 100, message = "Resource name must not exceed 100 characters")
+    @Pattern(
+            regexp = "^[a-zA-Z0-9\\s\\-_.',()]+$",
+            message = "Resource name contains invalid characters"
+    )
     private String name;
 
     @NotBlank(message = "Resource type is required")
     private String type;
 
-    @NotNull(message = "Capacity is required")
-    @Min(value = 1, message = "Capacity must be at least 1")
+    // Capacity is optional for equipment types like PROJECTOR, CAMERA, etc.
     private Integer capacity;
 
     @NotBlank(message = "Location is required")
+    @Size(max = 200, message = "Location must not exceed 200 characters")
+    @Pattern(
+            regexp = "^[a-zA-Z0-9\\s\\-_.',()]+$",
+            message = "Location contains invalid characters"
+    )
     private String location;
 
     @NotBlank(message = "Status is required")
