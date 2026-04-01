@@ -97,10 +97,10 @@ function CustomDropdown({ value, options, onChange, placeholder, error }) {
   );
 }
 
-// Validation helper
-const validateResourceName = (name) => {
-  const regex = /^[a-zA-Z0-9\s\-_\.'()]+$/;
-  return regex.test(name);
+// Validation helper – allows letters, numbers, spaces, hyphens, underscores, dots, apostrophes, parentheses, and commas
+const validateText = (text) => {
+  const regex = /^[a-zA-Z0-9\s\-_\.'(),]+$/;
+  return regex.test(text);
 };
 
 export default function AddResourceModal({ onClose, onSave }) {
@@ -112,9 +112,9 @@ export default function AddResourceModal({ onClose, onSave }) {
   const handleChange = (e) => {
     let { name, value } = e.target;
 
-    // Prevent special characters while typing in resource name
-    if (name === "name") {
-      value = value.replace(/[^a-zA-Z0-9\s\-_\.'()]/g, "");
+    // Prevent special characters while typing in name or location
+    if (name === "name" || name === "location") {
+      value = value.replace(/[^a-zA-Z0-9\s\-_\.'(),]/g, "");
     }
 
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -169,25 +169,33 @@ export default function AddResourceModal({ onClose, onSave }) {
   const validateForm = () => {
     const newErrors = {};
 
+    // Name validation
     if (!form.name.trim()) {
       newErrors.name = "Resource name is required";
-    } else if (!validateResourceName(form.name)) {
+    } else if (!validateText(form.name)) {
       newErrors.name =
         "Resource name cannot contain special characters like @, #, $, %";
     }
 
+    // Type validation
     if (!form.type) {
       newErrors.type = "Type is required";
     }
 
+    // Location validation
     if (!form.location.trim()) {
       newErrors.location = "Location is required";
+    } else if (!validateText(form.location)) {
+      newErrors.location =
+        "Location cannot contain special characters like @, #, $, %";
     }
 
+    // Capacity validation
     if (!form.capacity || Number(form.capacity) <= 0) {
       newErrors.capacity = "Capacity must be a positive number";
     }
 
+    // Status validation
     if (!form.status) {
       newErrors.status = "Status is required";
     }
@@ -332,12 +340,13 @@ export default function AddResourceModal({ onClose, onSave }) {
                 name="location"
                 value={form.location}
                 onChange={handleChange}
+                maxLength={200}
                 className={`w-full rounded-xl border px-4 py-2.5 text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500 ${
                   errors.location
                     ? "border-red-500/50 bg-white/5"
                     : "border-orange-500/30 bg-white/5"
                 }`}
-                placeholder="e.g. Building A - Floor 2"
+                placeholder="e.g. Building A, Floor 2"
               />
 
               {errors.location && (
