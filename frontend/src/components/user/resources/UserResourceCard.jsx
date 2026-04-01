@@ -2,26 +2,44 @@ import { useState } from "react";
 import { FiMapPin, FiUsers, FiImage, FiBookOpen } from "react-icons/fi";
 import UserResourceDetailsModal from "./UserResourceDetailsModal";
 
+const NON_CAPACITY_TYPES = [
+  "PROJECTOR",
+  "CAMERA",
+  "PRINTER",
+  "SCANNER",
+  "MICROPHONE",
+  "SPEAKER",
+  "SMART_BOARD",
+  "LAB_EQUIPMENT",
+];
+
 export default function UserResourceCard({ resource }) {
   const [showDetails, setShowDetails] = useState(false);
 
-  const statusClasses =
-    resource.status === "ACTIVE"
-      ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
-      : "bg-red-100 text-red-700 border border-red-200";
+  const isActive = resource.status === "ACTIVE";
+
+  const statusClasses = isActive
+    ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
+    : "bg-red-100 text-red-700 border border-red-200";
 
   const imageUrl = resource.imageUrl
     ? `http://localhost:9090${resource.imageUrl}`
     : null;
 
+  const isCapacityApplicable = !NON_CAPACITY_TYPES.includes(resource.type);
+
   const handleBooking = () => {
-    // later connect to booking page or modal
     alert(`Booking resource: ${resource.name}`);
+  };
+
+  const formatType = (type) => {
+    return type?.replaceAll("_", " ");
   };
 
   return (
     <>
       <div className="group overflow-hidden rounded-3xl border border-orange-100 bg-white shadow-md transition-all hover:-translate-y-1 hover:border-orange-300 hover:shadow-xl">
+
         {/* Resource Image */}
         <div className="relative h-44 w-full overflow-hidden bg-orange-50">
           {imageUrl ? (
@@ -38,7 +56,7 @@ export default function UserResourceCard({ resource }) {
 
           {/* Type badge */}
           <div className="absolute left-3 top-3 rounded-full bg-gradient-to-r from-orange-500 to-amber-400 px-3 py-1.5 text-xs font-bold text-white shadow-lg">
-            {resource.type}
+            {formatType(resource.type)}
           </div>
         </div>
 
@@ -54,7 +72,7 @@ export default function UserResourceCard({ resource }) {
                 <span
                   className={`rounded-full px-3 py-1 text-xs font-semibold ${statusClasses}`}
                 >
-                  {resource.status === "ACTIVE" ? "Active" : "Out of Service"}
+                  {isActive ? "Active" : "Out of Service"}
                 </span>
               </div>
             </div>
@@ -62,6 +80,7 @@ export default function UserResourceCard({ resource }) {
 
           {/* Resource details */}
           <div className="space-y-2 text-sm text-slate-600">
+
             <div className="flex items-center gap-2">
               <FiMapPin className="text-orange-500" size={14} />
               <span>{resource.location}</span>
@@ -69,12 +88,20 @@ export default function UserResourceCard({ resource }) {
 
             <div className="flex items-center gap-2">
               <FiUsers className="text-orange-500" size={14} />
-              <span>Capacity: {resource.capacity}</span>
+
+              {isCapacityApplicable ? (
+                <span>Capacity: {resource.capacity}</span>
+              ) : (
+                <span className="italic text-gray-400">
+                  Capacity: Not applicable
+                </span>
+              )}
             </div>
           </div>
 
           {/* Buttons */}
           <div className="mt-4 flex gap-2">
+
             <button
               onClick={() => setShowDetails(true)}
               className="flex-1 rounded-xl bg-orange-100 py-2 text-sm font-medium text-orange-700 transition hover:bg-orange-200"
@@ -84,9 +111,9 @@ export default function UserResourceCard({ resource }) {
 
             <button
               onClick={handleBooking}
-              disabled={resource.status !== "ACTIVE"}
+              disabled={!isActive}
               className={`flex-1 rounded-xl py-2 text-sm font-medium transition flex items-center justify-center gap-1 ${
-                resource.status === "ACTIVE"
+                isActive
                   ? "bg-gradient-to-r from-orange-500 to-amber-400 text-white shadow-md hover:scale-105 hover:shadow-lg"
                   : "bg-gray-200 text-gray-400 cursor-not-allowed"
               }`}
@@ -94,10 +121,12 @@ export default function UserResourceCard({ resource }) {
               <FiBookOpen size={14} />
               Book
             </button>
+
           </div>
         </div>
       </div>
 
+      {/* Details Modal */}
       {showDetails && (
         <UserResourceDetailsModal
           resource={resource}
