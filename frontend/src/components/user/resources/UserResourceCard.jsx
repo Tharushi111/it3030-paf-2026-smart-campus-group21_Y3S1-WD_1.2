@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FiMapPin, FiUsers, FiImage } from "react-icons/fi";
+import { FiMapPin, FiUsers, FiImage, FiBookOpen } from "react-icons/fi";
 import UserResourceDetailsModal from "./UserResourceDetailsModal";
 
 export default function UserResourceCard({ resource }) {
@@ -13,6 +13,11 @@ export default function UserResourceCard({ resource }) {
   const imageUrl = resource.imageUrl
     ? `http://localhost:9090${resource.imageUrl}`
     : null;
+
+  const handleBooking = () => {
+    // later connect to booking page or modal
+    alert(`Booking resource: ${resource.name}`);
+  };
 
   return (
     <>
@@ -55,6 +60,7 @@ export default function UserResourceCard({ resource }) {
             </div>
           </div>
 
+          {/* Resource details */}
           <div className="space-y-2 text-sm text-slate-600">
             <div className="flex items-center gap-2">
               <FiMapPin className="text-orange-500" size={14} />
@@ -67,12 +73,28 @@ export default function UserResourceCard({ resource }) {
             </div>
           </div>
 
-          <button
-            onClick={() => setShowDetails(true)}
-            className="mt-4 w-full rounded-xl bg-orange-100 py-2 text-sm font-medium text-orange-700 transition hover:bg-orange-200"
-          >
-            View Details
-          </button>
+          {/* Buttons */}
+          <div className="mt-4 flex gap-2">
+            <button
+              onClick={() => setShowDetails(true)}
+              className="flex-1 rounded-xl bg-orange-100 py-2 text-sm font-medium text-orange-700 transition hover:bg-orange-200"
+            >
+              View Details
+            </button>
+
+            <button
+              onClick={handleBooking}
+              disabled={resource.status !== "ACTIVE"}
+              className={`flex-1 rounded-xl py-2 text-sm font-medium transition flex items-center justify-center gap-1 ${
+                resource.status === "ACTIVE"
+                  ? "bg-gradient-to-r from-orange-500 to-amber-400 text-white shadow-md hover:scale-105 hover:shadow-lg"
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
+              }`}
+            >
+              <FiBookOpen size={14} />
+              Book
+            </button>
+          </div>
         </div>
       </div>
 
