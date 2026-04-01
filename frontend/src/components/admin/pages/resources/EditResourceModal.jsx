@@ -11,14 +11,42 @@ import {
 } from "react-icons/fi";
 import toast from "react-hot-toast";
 
-const TYPES = ["LAB", "LECTURE_HALL", "MEETING_ROOM", "PROJECTOR", "CAMERA"];
+const TYPES = [
+  "LAB",
+  "LECTURE_HALL",
+  "MEETING_ROOM",
+  "AUDITORIUM",
+  "LIBRARY_FLOOR",
+  "STUDY_AREA",
+  "OPEN_STUDY_AREA",
+  "CANTEEN",
+  "CAFETERIA",
+  "PROJECTOR",
+  "CAMERA",
+  "PRINTER",
+  "SCANNER",
+  "MICROPHONE",
+  "SPEAKER",
+  "SMART_BOARD",
+  "LAB_EQUIPMENT",
+];
 
 const STATUS_OPTIONS = [
   { value: "ACTIVE", label: "ACTIVE" },
   { value: "OUT_OF_SERVICE", label: "OUT OF SERVICE" },
 ];
 
-// Custom dropdown component
+const NON_CAPACITY_TYPES = [
+  "PROJECTOR",
+  "CAMERA",
+  "PRINTER",
+  "SCANNER",
+  "MICROPHONE",
+  "SPEAKER",
+  "SMART_BOARD",
+  "LAB_EQUIPMENT",
+];
+
 function CustomDropdown({ value, options, onChange, placeholder, error }) {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -67,7 +95,7 @@ function CustomDropdown({ value, options, onChange, placeholder, error }) {
 
       {open && (
         <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-xl border border-orange-500/30 bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 shadow-xl">
-          <div className="max-h-48 overflow-y-auto">
+          <div className="max-h-56 overflow-y-auto">
             {options.map((option) => (
               <button
                 key={option.value}
@@ -89,7 +117,6 @@ function CustomDropdown({ value, options, onChange, placeholder, error }) {
   );
 }
 
-// Helper function to validate text (allows letters, numbers, spaces, hyphens, underscores, dots, apostrophes, parentheses, and commas)
 const validateText = (text) => {
   const regex = /^[a-zA-Z0-9\s\-_\.'(),]+$/;
   return regex.test(text);
@@ -101,6 +128,8 @@ export default function EditResourceModal({ resource, onClose, onSave }) {
   const [imageFile, setImageFile] = useState(null);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+
+  const isCapacityRequired = !NON_CAPACITY_TYPES.includes(form.type);
 
   useEffect(() => {
     setForm(resource);
@@ -118,7 +147,6 @@ export default function EditResourceModal({ resource, onClose, onSave }) {
   const handleChange = (e) => {
     let { name, value } = e.target;
 
-    // Block special characters while typing in resource name or location
     if (name === "name" || name === "location") {
       value = value.replace(/[^a-zA-Z0-9\s\-_\.'(),]/g, "");
     }
@@ -130,11 +158,24 @@ export default function EditResourceModal({ resource, onClose, onSave }) {
     }
   };
 
+  const handleTypeChange = (val) => {
+    setForm((prev) => ({
+      ...prev,
+      type: val,
+      capacity: NON_CAPACITY_TYPES.includes(val) ? "" : prev.capacity,
+    }));
+
+    setErrors((prev) => ({
+      ...prev,
+      type: "",
+      capacity: "",
+    }));
+  };
+
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       setErrors((prev) => ({
         ...prev,
@@ -145,7 +186,6 @@ export default function EditResourceModal({ resource, onClose, onSave }) {
       return;
     }
 
-    // Validate file type
     const allowedTypes = [
       "image/jpeg",
       "image/png",
@@ -175,7 +215,6 @@ export default function EditResourceModal({ resource, onClose, onSave }) {
   const validateForm = () => {
     const newErrors = {};
 
-    // Name validation
     if (!form.name?.trim()) {
       newErrors.name = "Resource name is required";
     } else if (!validateText(form.name)) {
@@ -183,12 +222,10 @@ export default function EditResourceModal({ resource, onClose, onSave }) {
         "Resource name cannot contain special characters like @, #, $, %";
     }
 
-    // Type validation
     if (!form.type) {
       newErrors.type = "Type is required";
     }
 
-    // Location validation
     if (!form.location?.trim()) {
       newErrors.location = "Location is required";
     } else if (!validateText(form.location)) {
@@ -196,12 +233,12 @@ export default function EditResourceModal({ resource, onClose, onSave }) {
         "Location cannot contain special characters like @, #, $, %";
     }
 
-    // Capacity validation
-    if (!form.capacity || Number(form.capacity) <= 0) {
-      newErrors.capacity = "Capacity must be a positive number";
+    if (isCapacityRequired) {
+      if (!form.capacity || Number(form.capacity) <= 0) {
+        newErrors.capacity = "Capacity must be a positive number";
+      }
     }
 
-    // Status validation
     if (!form.status) {
       newErrors.status = "Status is required";
     }
@@ -221,9 +258,12 @@ export default function EditResourceModal({ resource, onClose, onSave }) {
       const formData = new FormData();
       formData.append("name", form.name);
       formData.append("type", form.type);
-      formData.append("capacity", form.capacity);
       formData.append("location", form.location);
       formData.append("status", form.status);
+
+      if (isCapacityRequired) {
+        formData.append("capacity", form.capacity);
+      }
 
       if (imageFile) {
         formData.append("image", imageFile);
@@ -240,10 +280,14 @@ export default function EditResourceModal({ resource, onClose, onSave }) {
     }
   };
 
+  const typeOptions = TYPES.map((t) => ({
+    value: t,
+    label: t.replaceAll("_", " "),
+  }));
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
       <div className="flex max-h-[90vh] w-full max-w-md flex-col rounded-3xl border border-orange-500/20 bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 shadow-2xl">
-        {/* Header */}
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-orange-500/20 bg-inherit px-6 pb-4 pt-6">
           <h2 className="text-lg font-bold text-white">Edit Resource</h2>
 
@@ -255,10 +299,8 @@ export default function EditResourceModal({ resource, onClose, onSave }) {
           </button>
         </div>
 
-        {/* Scrollable Form Area */}
         <div className="flex-1 overflow-y-auto px-6 py-5">
           <form id="editResourceForm" onSubmit={handleSubmit} className="space-y-4">
-            {/* Name */}
             <div>
               <label className="flex items-center gap-1 text-xs font-semibold text-orange-400">
                 <FiType size={12} />
@@ -277,15 +319,19 @@ export default function EditResourceModal({ resource, onClose, onSave }) {
                     ? "border-red-500/50 bg-white/5"
                     : "border-orange-500/30 bg-white/5"
                 }`}
-                placeholder="e.g. Engineering Lab 01"
+                placeholder="e.g. Study Area A"
               />
+
+              <p className="mt-1 text-[11px] text-zinc-500">
+                Only letters, numbers, spaces, hyphens, underscores, dots,
+                apostrophes, commas, and parentheses are allowed.
+              </p>
 
               {errors.name && (
                 <p className="mt-1 text-xs text-red-400">{errors.name}</p>
               )}
             </div>
 
-            {/* Type */}
             <div>
               <label className="flex items-center gap-1 text-xs font-semibold text-orange-400">
                 Type
@@ -294,13 +340,8 @@ export default function EditResourceModal({ resource, onClose, onSave }) {
 
               <CustomDropdown
                 value={form.type}
-                options={TYPES.map((t) => ({ value: t, label: t }))}
-                onChange={(val) => {
-                  setForm((prev) => ({ ...prev, type: val }));
-                  if (errors.type) {
-                    setErrors((prev) => ({ ...prev, type: "" }));
-                  }
-                }}
+                options={typeOptions}
+                onChange={handleTypeChange}
                 placeholder="Select type"
                 error={errors.type}
               />
@@ -310,12 +351,13 @@ export default function EditResourceModal({ resource, onClose, onSave }) {
               )}
             </div>
 
-            {/* Capacity */}
             <div>
               <label className="flex items-center gap-1 text-xs font-semibold text-orange-400">
                 <FiUsers size={12} />
                 Capacity
-                <span className="ml-1 text-red-500">*</span>
+                {isCapacityRequired && (
+                  <span className="ml-1 text-red-500">*</span>
+                )}
               </label>
 
               <input
@@ -323,20 +365,32 @@ export default function EditResourceModal({ resource, onClose, onSave }) {
                 name="capacity"
                 value={form.capacity}
                 onChange={handleChange}
-                className={`w-full rounded-xl border px-4 py-2.5 text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500 ${
-                  errors.capacity
-                    ? "border-red-500/50 bg-white/5"
-                    : "border-orange-500/30 bg-white/5"
+                disabled={!isCapacityRequired}
+                className={`w-full rounded-xl border px-4 py-2.5 text-white placeholder-zinc-500 focus:outline-none ${
+                  !isCapacityRequired
+                    ? "cursor-not-allowed border-zinc-700 bg-zinc-800/60 text-zinc-500"
+                    : errors.capacity
+                    ? "border-red-500/50 bg-white/5 focus:border-orange-500"
+                    : "border-orange-500/30 bg-white/5 focus:border-orange-500"
                 }`}
-                placeholder="e.g. 40"
+                placeholder={
+                  isCapacityRequired
+                    ? "e.g. 40"
+                    : "Not applicable for this type"
+                }
               />
+
+              <p className="mt-1 text-[11px] text-zinc-500">
+                {isCapacityRequired
+                  ? "Use capacity for halls, floors, study spaces, canteens, rooms, and labs."
+                  : "Capacity is not applicable for equipment items like projectors or cameras."}
+              </p>
 
               {errors.capacity && (
                 <p className="mt-1 text-xs text-red-400">{errors.capacity}</p>
               )}
             </div>
 
-            {/* Location */}
             <div>
               <label className="flex items-center gap-1 text-xs font-semibold text-orange-400">
                 <FiMapPin size={12} />
@@ -355,7 +409,7 @@ export default function EditResourceModal({ resource, onClose, onSave }) {
                     ? "border-red-500/50 bg-white/5"
                     : "border-orange-500/30 bg-white/5"
                 }`}
-                placeholder="e.g. Building A, Floor 2"
+                placeholder="e.g. Main Building, Ground Floor"
               />
 
               {errors.location && (
@@ -363,7 +417,6 @@ export default function EditResourceModal({ resource, onClose, onSave }) {
               )}
             </div>
 
-            {/* Status */}
             <div>
               <label className="flex items-center gap-1 text-xs font-semibold text-orange-400">
                 <FiToggleRight size={12} />
@@ -389,7 +442,6 @@ export default function EditResourceModal({ resource, onClose, onSave }) {
               )}
             </div>
 
-            {/* Image */}
             <div>
               <label className="flex items-center gap-1 text-xs font-semibold text-orange-400">
                 <FiImage size={12} />
@@ -428,7 +480,6 @@ export default function EditResourceModal({ resource, onClose, onSave }) {
           </form>
         </div>
 
-        {/* Buttons */}
         <div className="sticky bottom-0 border-t border-orange-500/20 bg-inherit px-6 pb-6 pt-3">
           <div className="flex gap-3">
             <button
