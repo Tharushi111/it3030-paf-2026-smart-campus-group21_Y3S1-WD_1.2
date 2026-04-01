@@ -28,7 +28,7 @@ public class Resource {
     @NotBlank(message = "Resource type is required")
     private String type;
 
-    // Capacity is optional for equipment types like PROJECTOR, CAMERA, etc.
+    // Capacity is optional for equipment types
     private Integer capacity;
 
     @NotBlank(message = "Location is required")
