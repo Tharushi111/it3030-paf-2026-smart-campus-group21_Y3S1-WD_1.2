@@ -24,7 +24,7 @@ import {
   updateResource,
 } from "../../../../services/resourceApi";
 
-// ------------------ Custom Dropdown Component ------------------
+//Custom Dropdown Component
 function CustomDropdown({ value, options, onChange, placeholder }) {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -104,8 +104,8 @@ function CustomDropdown({ value, options, onChange, placeholder }) {
     </div>
   );
 }
-// ---------------------------------------------------------------
 
+// Extended TYPE_STYLES for all resource types
 const TYPE_STYLES = {
   LAB: {
     bg: "bg-blue-500/15",
@@ -122,6 +122,36 @@ const TYPE_STYLES = {
     text: "text-teal-300",
     border: "border-teal-500/30",
   },
+  AUDITORIUM: {
+    bg: "bg-purple-500/15",
+    text: "text-purple-300",
+    border: "border-purple-500/30",
+  },
+  LIBRARY_FLOOR: {
+    bg: "bg-indigo-500/15",
+    text: "text-indigo-300",
+    border: "border-indigo-500/30",
+  },
+  STUDY_AREA: {
+    bg: "bg-cyan-500/15",
+    text: "text-cyan-300",
+    border: "border-cyan-500/30",
+  },
+  OPEN_STUDY_AREA: {
+    bg: "bg-sky-500/15",
+    text: "text-sky-300",
+    border: "border-sky-500/30",
+  },
+  CANTEEN: {
+    bg: "bg-orange-500/15",
+    text: "text-orange-300",
+    border: "border-orange-500/30",
+  },
+  CAFETERIA: {
+    bg: "bg-amber-500/15",
+    text: "text-amber-300",
+    border: "border-amber-500/30",
+  },
   PROJECTOR: {
     bg: "bg-amber-500/15",
     text: "text-amber-300",
@@ -131,6 +161,36 @@ const TYPE_STYLES = {
     bg: "bg-rose-500/15",
     text: "text-rose-300",
     border: "border-rose-500/30",
+  },
+  PRINTER: {
+    bg: "bg-gray-500/15",
+    text: "text-gray-300",
+    border: "border-gray-500/30",
+  },
+  SCANNER: {
+    bg: "bg-gray-500/15",
+    text: "text-gray-300",
+    border: "border-gray-500/30",
+  },
+  MICROPHONE: {
+    bg: "bg-slate-500/15",
+    text: "text-slate-300",
+    border: "border-slate-500/30",
+  },
+  SPEAKER: {
+    bg: "bg-stone-500/15",
+    text: "text-stone-300",
+    border: "border-stone-500/30",
+  },
+  SMART_BOARD: {
+    bg: "bg-fuchsia-500/15",
+    text: "text-fuchsia-300",
+    border: "border-fuchsia-500/30",
+  },
+  LAB_EQUIPMENT: {
+    bg: "bg-zinc-500/15",
+    text: "text-zinc-300",
+    border: "border-zinc-500/30",
   },
 };
 
@@ -175,7 +235,6 @@ function ResourceImageCell({ resource }) {
       </div>
       <div>
         <p className="font-medium text-white">{resource.name}</p>
-        <p className="text-xs text-zinc-500">ID: {resource.id}</p>
       </div>
     </div>
   );
@@ -187,8 +246,20 @@ const typeOptions = [
   { value: "LAB", label: "LAB" },
   { value: "LECTURE_HALL", label: "LECTURE HALL" },
   { value: "MEETING_ROOM", label: "MEETING ROOM" },
+  { value: "AUDITORIUM", label: "AUDITORIUM" },
+  { value: "LIBRARY_FLOOR", label: "LIBRARY FLOOR" },
+  { value: "STUDY_AREA", label: "STUDY AREA" },
+  { value: "OPEN_STUDY_AREA", label: "OPEN STUDY AREA" },
+  { value: "CANTEEN", label: "CANTEEN" },
+  { value: "CAFETERIA", label: "CAFETERIA" },
   { value: "PROJECTOR", label: "PROJECTOR" },
   { value: "CAMERA", label: "CAMERA" },
+  { value: "PRINTER", label: "PRINTER" },
+  { value: "SCANNER", label: "SCANNER" },
+  { value: "MICROPHONE", label: "MICROPHONE" },
+  { value: "SPEAKER", label: "SPEAKER" },
+  { value: "SMART_BOARD", label: "SMART BOARD" },
+  { value: "LAB_EQUIPMENT", label: "LAB EQUIPMENT" },
 ];
 
 const statusOptions = [
@@ -230,19 +301,16 @@ export default function ResourceManagementPage() {
       fetchResources();
     } catch (error) {
       console.error(error);
-      toast.error("Failed to create resource");
     }
   };
 
   const handleSaveEdit = async (id, formData) => {
     try {
       await updateResource(id, formData);
-      toast.success("Resource updated successfully");
       setEditingResource(null);
       fetchResources();
     } catch (error) {
       console.error(error);
-      toast.error("Failed to update resource");
     }
   };
 

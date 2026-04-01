@@ -121,14 +121,26 @@ const typeOptions = [
   { value: "LAB", label: "LAB" },
   { value: "LECTURE_HALL", label: "LECTURE HALL" },
   { value: "MEETING_ROOM", label: "MEETING ROOM" },
+  { value: "AUDITORIUM", label: "AUDITORIUM" },
+  { value: "LIBRARY_FLOOR", label: "LIBRARY FLOOR" },
+  { value: "STUDY_AREA", label: "STUDY AREA" },
+  { value: "OPEN_STUDY_AREA", label: "OPEN STUDY AREA" },
+  { value: "CANTEEN", label: "CANTEEN" },
+  { value: "CAFETERIA", label: "CAFETERIA" },
   { value: "PROJECTOR", label: "PROJECTOR" },
   { value: "CAMERA", label: "CAMERA" },
+  { value: "PRINTER", label: "PRINTER" },
+  { value: "SCANNER", label: "SCANNER" },
+  { value: "MICROPHONE", label: "MICROPHONE" },
+  { value: "SPEAKER", label: "SPEAKER" },
+  { value: "SMART_BOARD", label: "SMART BOARD" },
+  { value: "LAB_EQUIPMENT", label: "LAB EQUIPMENT" },
 ];
 
 const statusOptions = [
   { value: "ALL", label: "All Status" },
-  { value: "ACTIVE", label: "ACTIVE" },
-  { value: "OUT_OF_SERVICE", label: "OUT OF SERVICE" },
+  { value: "ACTIVE", label: "Active" },
+  { value: "OUT_OF_SERVICE", label: "Out of Service" },
 ];
 
 export default function UserResourceFilters({

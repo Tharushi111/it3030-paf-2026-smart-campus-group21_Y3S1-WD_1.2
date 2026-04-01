@@ -133,13 +133,11 @@ export default function EditResourceModal({ resource, onClose, onSave }) {
 
   useEffect(() => {
     setForm(resource);
-
     if (resource?.imageUrl) {
       setPreview(resource.imageUrl);
     } else {
       setPreview(null);
     }
-
     setImageFile(null);
     setErrors({});
   }, [resource]);
@@ -164,7 +162,6 @@ export default function EditResourceModal({ resource, onClose, onSave }) {
       type: val,
       capacity: NON_CAPACITY_TYPES.includes(val) ? "" : prev.capacity,
     }));
-
     setErrors((prev) => ({
       ...prev,
       type: "",
@@ -350,9 +347,7 @@ export default function EditResourceModal({ resource, onClose, onSave }) {
               <label className="flex items-center gap-1 text-xs font-semibold text-orange-400">
                 <FiUsers size={12} />
                 Capacity
-                {isCapacityRequired && (
-                  <span className="ml-1 text-red-500">*</span>
-                )}
+                {isCapacityRequired && <span className="ml-1 text-red-500">*</span>}
               </label>
 
               <input
@@ -363,7 +358,7 @@ export default function EditResourceModal({ resource, onClose, onSave }) {
                 disabled={!isCapacityRequired}
                 className={`w-full rounded-xl border px-4 py-2.5 text-white placeholder-zinc-500 focus:outline-none ${
                   !isCapacityRequired
-                    ? "cursor-not-allowed border-zinc-700 bg-zinc-800/60 text-zinc-500"
+                    ? "cursor-not-allowed border-orange-500/20 bg-white/5 text-zinc-400"
                     : errors.capacity
                     ? "border-red-500/50 bg-white/5 focus:border-orange-500"
                     : "border-orange-500/30 bg-white/5 focus:border-orange-500"
@@ -375,7 +370,7 @@ export default function EditResourceModal({ resource, onClose, onSave }) {
                 }
               />
 
-              <p className="mt-1 text-[11px] text-zinc-500">
+              <p className="mt-1 text-[11px] text-orange-400/70">
                 {isCapacityRequired
                   ? "Use capacity for halls, floors, study spaces, canteens, rooms, and labs."
                   : "Capacity is not applicable for equipment items like projectors or cameras."}

@@ -75,8 +75,6 @@ import {
                   {isActive ? "Active" : "Out of Service"}
                 </span>
               </div>
-  
-              <p className="text-sm text-slate-500">Resource ID: {resource.id}</p>
             </div>
   
             {/* Details grid */}

@@ -13,10 +13,19 @@ const NON_CAPACITY_TYPES = [
   "LAB_EQUIPMENT",
 ];
 
+const NON_BOOKABLE_TYPES = [
+  "STUDY_AREA",
+  "OPEN_STUDY_AREA",
+  "LIBRARY_FLOOR",
+  "CANTEEN",
+  "CAFETERIA",
+];
+
 export default function UserResourceCard({ resource }) {
   const [showDetails, setShowDetails] = useState(false);
 
   const isActive = resource.status === "ACTIVE";
+  const isBookable = isActive && !NON_BOOKABLE_TYPES.includes(resource.type);
 
   const statusClasses = isActive
     ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
@@ -29,6 +38,7 @@ export default function UserResourceCard({ resource }) {
   const isCapacityApplicable = !NON_CAPACITY_TYPES.includes(resource.type);
 
   const handleBooking = () => {
+    if (!isBookable) return;
     alert(`Booking resource: ${resource.name}`);
   };
 
@@ -36,12 +46,21 @@ export default function UserResourceCard({ resource }) {
     return type?.replaceAll("_", " ");
   };
 
+  const getDisabledReason = () => {
+    if (!isActive) return "Resource is not available for booking";
+    if (NON_BOOKABLE_TYPES.includes(resource.type)) {
+      return `${formatType(resource.type)} spaces cannot be booked`;
+    }
+    return "";
+  };
+
+  const disabledReason = getDisabledReason();
+
   return (
     <>
-      <div className="group overflow-hidden rounded-3xl border border-orange-100 bg-white shadow-md transition-all hover:-translate-y-1 hover:border-orange-300 hover:shadow-xl">
-
+      <div className="group flex h-full flex-col overflow-hidden rounded-3xl border border-orange-100 bg-white shadow-md transition-all hover:-translate-y-1 hover:border-orange-300 hover:shadow-xl">
         {/* Resource Image */}
-        <div className="relative h-44 w-full overflow-hidden bg-orange-50">
+        <div className="relative h-44 w-full overflow-hidden bg-orange-50 flex-shrink-0">
           {imageUrl ? (
             <img
               src={imageUrl}
@@ -61,47 +80,42 @@ export default function UserResourceCard({ resource }) {
         </div>
 
         {/* Content */}
-        <div className="p-5">
-          <div className="mb-4 flex items-start justify-between gap-3">
-            <div className="flex-1">
-              <h3 className="text-lg font-bold text-slate-800">
-                {resource.name}
-              </h3>
+        <div className="flex flex-1 flex-col p-5">
+          <div className="flex-1">
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-slate-800">
+                  {resource.name}
+                </h3>
 
-              <div className="mt-2 flex flex-wrap gap-2">
-                <span
-                  className={`rounded-full px-3 py-1 text-xs font-semibold ${statusClasses}`}
-                >
-                  {isActive ? "Active" : "Out of Service"}
-                </span>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-semibold ${statusClasses}`}
+                  >
+                    {isActive ? "Active" : "Out of Service"}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Resource details */}
-          <div className="space-y-2 text-sm text-slate-600">
+            {/* Resource details */}
+            <div className="space-y-2 text-sm text-slate-600">
+              <div className="flex items-center gap-2">
+                <FiMapPin className="text-orange-500" size={14} />
+                <span>{resource.location}</span>
+              </div>
 
-            <div className="flex items-center gap-2">
-              <FiMapPin className="text-orange-500" size={14} />
-              <span>{resource.location}</span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <FiUsers className="text-orange-500" size={14} />
-
-              {isCapacityApplicable ? (
-                <span>Capacity: {resource.capacity}</span>
-              ) : (
-                <span className="italic text-gray-400">
-                  Capacity: Not applicable
-                </span>
+              {isCapacityApplicable && (
+                <div className="flex items-center gap-2">
+                  <FiUsers className="text-orange-500" size={14} />
+                  <span>Capacity: {resource.capacity}</span>
+                </div>
               )}
             </div>
           </div>
 
-          {/* Buttons */}
+          {/* Buttons - always at bottom */}
           <div className="mt-4 flex gap-2">
-
             <button
               onClick={() => setShowDetails(true)}
               className="flex-1 rounded-xl bg-orange-100 py-2 text-sm font-medium text-orange-700 transition hover:bg-orange-200"
@@ -111,9 +125,10 @@ export default function UserResourceCard({ resource }) {
 
             <button
               onClick={handleBooking}
-              disabled={!isActive}
+              disabled={!isBookable}
+              title={disabledReason}
               className={`flex-1 rounded-xl py-2 text-sm font-medium transition flex items-center justify-center gap-1 ${
-                isActive
+                isBookable
                   ? "bg-gradient-to-r from-orange-500 to-amber-400 text-white shadow-md hover:scale-105 hover:shadow-lg"
                   : "bg-gray-200 text-gray-400 cursor-not-allowed"
               }`}
@@ -121,7 +136,6 @@ export default function UserResourceCard({ resource }) {
               <FiBookOpen size={14} />
               Book
             </button>
-
           </div>
         </div>
       </div>
