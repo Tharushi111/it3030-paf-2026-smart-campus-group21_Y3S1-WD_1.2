@@ -314,11 +314,6 @@ export default function AddResourceModal({ onClose, onSave }) {
                 placeholder="e.g. Library Floor 2"
               />
 
-              <p className="mt-1 text-[11px] text-zinc-500">
-                Only letters, numbers, spaces, hyphens, underscores, dots,
-                apostrophes, commas, and parentheses are allowed.
-              </p>
-
               {errors.name && (
                 <p className="mt-1 text-xs text-red-400">{errors.name}</p>
               )}
