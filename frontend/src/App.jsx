@@ -7,8 +7,6 @@ import AdminDashboard from "./components/admin/AdminDashboard.jsx";
 import ResourceManagementPage from "./components/admin/pages/resources/ResourceManagementPage.jsx";
 import UserLayout from "./components/layout/UserLayout.jsx";
 import AdminLayout from "./components/layout/AdminLayout.jsx";
-import MyTicketsPage from "./components/user/tickets/MyTicketsPage.jsx";
-import AdminTicketManagementPage from "./components/admin/pages/tickets/AdminTicketManagementPage.jsx";
 
 // temporary guards
 function ProtectedRoute() {
@@ -32,7 +30,6 @@ export default function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<UserDashboard />} />
           <Route path="/resources" element={<UserResourcesPage />} />
-          <Route path="/tickets" element={<MyTicketsPage />} />
         </Route>
 
         <Route
@@ -50,7 +47,6 @@ export default function App() {
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />
           <Route path="resources" element={<ResourceManagementPage />} />
-          <Route path="tickets" element={<AdminTicketManagementPage />} />
         </Route>
       </Route>
     </Routes>
