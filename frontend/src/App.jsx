@@ -2,11 +2,17 @@ import { Routes, Route, Outlet, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 
 import HomePage from "./components/Home.jsx";
+import AboutPage from "./components/AboutPage.jsx";
+import ContactPage from "./components/ContactPage.jsx";
 import LoginPage from "./components/login.jsx";
+import NotFoundPage from "./components/NotFoundPage.jsx";
+
 import UserDashboard from "./components/user/UserDashboard.jsx";
 import UserResourcesPage from "./components/user/resources/UserResourcesPage.jsx";
+
 import AdminDashboard from "./components/admin/AdminDashboard.jsx";
 import ResourceManagementPage from "./components/admin/pages/resources/ResourceManagementPage.jsx";
+
 import UserLayout from "./components/layout/UserLayout.jsx";
 import AdminLayout from "./components/layout/AdminLayout.jsx";
 
@@ -59,7 +65,7 @@ function PublicOnlyRoute() {
   );
 }
 
-/* Home Route Redirect Logic */
+/* Root Route */
 function RootRoute() {
   const { user, loading } = useAuth();
 
@@ -71,12 +77,10 @@ function RootRoute() {
     );
   }
 
-  // If admin already logged in, send to admin side
   if (user?.role === "ADMIN") {
     return <Navigate to="/admin" replace />;
   }
 
-  // Guests and normal users can see normal homepage
   return <HomePage />;
 }
 
@@ -86,19 +90,22 @@ export default function App() {
       {/* User Side */}
       <Route element={<UserLayout />}>
         <Route index element={<RootRoute />} />
-
-        {/* Public resources page */}
+        <Route path="about" element={<AboutPage />} />
+        <Route path="contact" element={<ContactPage />} />
         <Route path="resources" element={<UserResourcesPage />} />
 
-        {/* Login page only for guests */}
+        {/* Guest only */}
         <Route element={<PublicOnlyRoute />}>
           <Route path="login" element={<LoginPage />} />
         </Route>
 
-        {/* Normal user protected pages */}
+        {/* Logged user only */}
         <Route element={<ProtectedRoute />}>
           <Route path="dashboard" element={<UserDashboard />} />
         </Route>
+
+        {/* 404 inside user layout */}
+        <Route path="*" element={<NotFoundPage />} />
       </Route>
 
       {/* Admin Side */}
@@ -110,16 +117,6 @@ export default function App() {
           </Route>
         </Route>
       </Route>
-
-      {/* Fallback */}
-      <Route
-        path="*"
-        element={
-          <div className="flex min-h-screen items-center justify-center bg-orange-50 text-3xl font-bold text-orange-500">
-            404 - Page Not Found
-          </div>
-        }
-      />
     </Routes>
   );
 }
