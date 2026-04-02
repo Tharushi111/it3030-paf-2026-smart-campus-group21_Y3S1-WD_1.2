@@ -1,4 +1,5 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
 import {
   FiHome,
   FiGrid,
@@ -13,14 +14,41 @@ import {
   FiBell,
   FiUser,
   FiTool,
+  FiLogOut,
+  FiChevronDown,
+  FiRefreshCw,
 } from "react-icons/fi";
+import { useAuth } from "../../context/AuthContext";
 
 export default function UserLayout() {
   const location = useLocation();
+  const { user, logout, switchAccount, loading } = useAuth();
 
-  // temporary notification state
-  const hasUnreadNotifications = true;
-  const unreadCount = 3;
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [imageError, setImageError] = useState(false);
+
+  const profileMenuRef = useRef(null);
+
+  const hasUnreadNotifications = !!user;
+  const unreadCount = user ? 3 : 0;
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        profileMenuRef.current &&
+        !profileMenuRef.current.contains(event.target)
+      ) {
+        setShowProfileMenu(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    setImageError(false);
+  }, [user]);
 
   const navLinkClass = (path) =>
     `flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200 ${
@@ -41,7 +69,7 @@ export default function UserLayout() {
       {/* HEADER */}
       <header className="sticky top-0 z-50 border-b border-orange-500/20 bg-gradient-to-r from-slate-950 via-blue-950 to-indigo-950 px-6 py-4 shadow-lg backdrop-blur-sm">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4">
-          {/* Logo + Brand */}
+          {/* Logo */}
           <div className="flex items-center gap-3">
             <img
               src="/Logo.png"
@@ -87,7 +115,7 @@ export default function UserLayout() {
             </Link>
           </nav>
 
-          {/* Right Actions */}
+          {/* Right Side */}
           <div className="flex items-center gap-3">
             {/* Notification */}
             <button
@@ -106,23 +134,98 @@ export default function UserLayout() {
               )}
             </button>
 
-            {/* Profile */}
-            <button
-              type="button"
-              className="rounded-xl border border-white/10 bg-white/5 p-2.5 text-zinc-300 transition-all duration-200 hover:border-orange-400/30 hover:bg-white/10 hover:text-orange-300 hover:scale-105"
-              title="Profile"
-            >
-              <FiUser size={18} />
-            </button>
+            {/* Auth Section */}
+            {loading ? (
+              <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-zinc-300">
+                Loading...
+              </div>
+            ) : user ? (
+              <div className="relative" ref={profileMenuRef}>
+                <button
+                  onClick={() => {
+                    setImageError(false);
+                    setShowProfileMenu((prev) => !prev);
+                  }}
+                  className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-zinc-200 transition hover:bg-white/10"
+                >
+                  {user.profileImageUrl && !imageError ? (
+                    <img
+                      src={user.profileImageUrl}
+                      alt={user.fullName}
+                      onError={() => setImageError(true)}
+                      className="h-9 w-9 rounded-full border border-orange-300/40 object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-500 text-white">
+                      <FiUser size={16} />
+                    </div>
+                  )}
 
-            {/* Login */}
-            <Link
-              to="/login"
-              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-400 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-orange-500/20"
-            >
-              <FiLogIn size={14} />
-              Login
-            </Link>
+                  <FiChevronDown size={16} />
+                </button>
+
+                {showProfileMenu && (
+                  <div className="absolute right-0 mt-3 w-72 rounded-2xl border border-orange-100 bg-white p-4 shadow-2xl">
+                    <div className="flex items-center gap-3">
+                      {user.profileImageUrl && !imageError ? (
+                        <img
+                          src={user.profileImageUrl}
+                          alt={user.fullName}
+                          onError={() => setImageError(true)}
+                          className="h-12 w-12 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-500 text-white">
+                          <FiUser size={20} />
+                        </div>
+                      )}
+
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-slate-800">
+                          {user.fullName}
+                        </p>
+                        <p className="truncate text-sm text-slate-500">
+                          {user.email}
+                        </p>
+                        <span
+                          className={`mt-1 inline-block rounded-full px-2.5 py-1 text-[10px] font-bold ${
+                            user.role === "ADMIN"
+                              ? "bg-orange-100 text-orange-700"
+                              : "bg-emerald-100 text-emerald-700"
+                          }`}
+                        >
+                          {user.role}
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={switchAccount}
+                      className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-4 py-2.5 text-sm font-semibold text-orange-700 transition hover:bg-orange-100"
+                    >
+                      <FiRefreshCw size={14} />
+                      Switch Account
+                    </button>
+
+                    <button
+                      onClick={logout}
+                      className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-400 px-4 py-2.5 text-sm font-semibold text-white"
+                    >
+                      <FiLogOut size={14} />
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-400 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-orange-500/20"
+              >
+                <FiLogIn size={14} />
+                Login
+              </Link>
+            )}
           </div>
         </div>
 
@@ -162,7 +265,6 @@ export default function UserLayout() {
       <footer className="border-t border-orange-500/20 bg-gradient-to-r from-slate-950 via-blue-950 to-indigo-950 px-6 py-8 text-white">
         <div className="mx-auto max-w-7xl">
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
-            {/* ABOUT */}
             <div>
               <h3 className="mb-3 text-lg font-bold">CampusNexus</h3>
               <p className="text-sm text-zinc-400">
@@ -171,7 +273,6 @@ export default function UserLayout() {
               </p>
             </div>
 
-            {/* LINKS */}
             <div>
               <h3 className="mb-3 text-lg font-bold">Quick Links</h3>
               <ul className="space-y-2 text-sm text-zinc-400">
@@ -203,7 +304,6 @@ export default function UserLayout() {
               </ul>
             </div>
 
-            {/* CONTACT */}
             <div>
               <h3 className="mb-3 text-lg font-bold">Contact</h3>
               <ul className="space-y-2 text-sm text-zinc-400">
@@ -222,7 +322,6 @@ export default function UserLayout() {
               </ul>
             </div>
 
-            {/* SOCIAL */}
             <div>
               <h3 className="mb-3 text-lg font-bold">Follow Us</h3>
               <div className="flex gap-3">
@@ -248,7 +347,6 @@ export default function UserLayout() {
             </div>
           </div>
 
-          {/* COPYRIGHT */}
           <div className="mt-8 border-t border-white/10 pt-6 text-center text-sm text-zinc-500">
             © 2026 CampusNexus — Smart Campus Operation Hub
           </div>
