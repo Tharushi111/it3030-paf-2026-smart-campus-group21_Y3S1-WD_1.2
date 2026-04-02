@@ -28,7 +28,7 @@ export default function HomePage() {
       icon: <FiShield size={22} />,
       title: "Role-Based Access",
       description:
-        "Students and administrators get a tailored experience with secure access to relevant features.",
+        "Students and staff members get a tailored experience with secure access to relevant features.",
     },
     {
       icon: <FiClock size={22} />,
