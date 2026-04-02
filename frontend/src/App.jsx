@@ -1,4 +1,6 @@
 import { Routes, Route, Outlet, Navigate } from "react-router-dom";
+import { useAuth } from "./context/AuthContext";
+
 import HomePage from "./components/Home.jsx";
 import LoginPage from "./components/login.jsx";
 import UserDashboard from "./components/user/UserDashboard.jsx";
@@ -8,47 +10,116 @@ import ResourceManagementPage from "./components/admin/pages/resources/ResourceM
 import UserLayout from "./components/layout/UserLayout.jsx";
 import AdminLayout from "./components/layout/AdminLayout.jsx";
 
-// temporary guards
+/* Protected Route */
 function ProtectedRoute() {
-  const isLoggedIn = true;
-  return isLoggedIn ? <Outlet /> : <Navigate to="/login" replace />;
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-orange-50 text-lg font-semibold text-orange-600">
+        Loading...
+      </div>
+    );
+  }
+
+  return user ? <Outlet /> : <Navigate to="/login" replace />;
 }
 
+/* Admin Route */
 function AdminRoute() {
-  const isAdmin = true;
-  return isAdmin ? <Outlet /> : <Navigate to="/" replace />;
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-orange-50 text-lg font-semibold text-orange-600">
+        Loading...
+      </div>
+    );
+  }
+
+  return user?.role === "ADMIN" ? <Outlet /> : <Navigate to="/" replace />;
+}
+
+/* Public Only Route */
+function PublicOnlyRoute() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-orange-50 text-lg font-semibold text-orange-600">
+        Loading...
+      </div>
+    );
+  }
+
+  return user ? (
+    <Navigate to={user.role === "ADMIN" ? "/admin" : "/dashboard"} replace />
+  ) : (
+    <Outlet />
+  );
+}
+
+/* Home Route Redirect Logic */
+function RootRoute() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-orange-50 text-lg font-semibold text-orange-600">
+        Loading...
+      </div>
+    );
+  }
+
+  // If admin already logged in, send to admin side
+  if (user?.role === "ADMIN") {
+    return <Navigate to="/admin" replace />;
+  }
+
+  // Guests and normal users can see normal homepage
+  return <HomePage />;
 }
 
 export default function App() {
   return (
     <Routes>
-      {/* Public / User Side */}
+      {/* User Side */}
       <Route element={<UserLayout />}>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/login" element={<LoginPage />} />
+        <Route index element={<RootRoute />} />
 
-        <Route element={<ProtectedRoute />}>
-          <Route path="/dashboard" element={<UserDashboard />} />
-          <Route path="/resources" element={<UserResourcesPage />} />
+        {/* Public resources page */}
+        <Route path="resources" element={<UserResourcesPage />} />
+
+        {/* Login page only for guests */}
+        <Route element={<PublicOnlyRoute />}>
+          <Route path="login" element={<LoginPage />} />
         </Route>
 
-        <Route
-          path="*"
-          element={
-            <div className="flex min-h-[60vh] items-center justify-center text-3xl font-bold text-orange-100">
-              404 - Page Not Found
-            </div>
-          }
-        />
+        {/* Normal user protected pages */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="dashboard" element={<UserDashboard />} />
+        </Route>
       </Route>
 
       {/* Admin Side */}
-      <Route element={<AdminRoute />}>
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<AdminDashboard />} />
-          <Route path="resources" element={<ResourceManagementPage />} />
+      <Route element={<ProtectedRoute />}>
+        <Route element={<AdminRoute />}>
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="resources" element={<ResourceManagementPage />} />
+          </Route>
         </Route>
       </Route>
+
+      {/* Fallback */}
+      <Route
+        path="*"
+        element={
+          <div className="flex min-h-screen items-center justify-center bg-orange-50 text-3xl font-bold text-orange-500">
+            404 - Page Not Found
+          </div>
+        }
+      />
     </Routes>
   );
 }
