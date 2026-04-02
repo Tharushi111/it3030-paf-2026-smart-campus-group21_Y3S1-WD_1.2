@@ -41,43 +41,7 @@ export default function LoginPage() {
             className="h-full w-full object-cover"
           />
 
-          {/* soft dark readability layer only */}
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-900/20 to-transparent" />
-
-          <div className="absolute inset-x-0 bottom-0 p-8 text-white">
-            <div className="max-w-md">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold tracking-wide backdrop-blur">
-                <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                Smart Campus Operation Hub
-              </div>
-
-              <h2 className="mt-5 text-3xl font-bold leading-tight">
-                Manage campus resources faster, smarter, and in one place
-              </h2>
-
-              <p className="mt-4 text-sm leading-6 text-slate-200/90">
-                Access facilities, view resources, manage bookings, and stay
-                updated through a clean digital campus experience built for
-                students and administrators.
-              </p>
-
-              <div className="mt-6 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
-                <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur">
-                  <p className="font-semibold">Resource Access</p>
-                  <p className="mt-1 text-xs text-slate-200/80">
-                    Explore labs, rooms, devices, and campus facilities easily.
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur">
-                  <p className="font-semibold">Quick Booking</p>
-                  <p className="mt-1 text-xs text-slate-200/80">
-                    Reserve available resources with a smoother workflow.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+          
         </div>
 
         {/* Right Side */}
