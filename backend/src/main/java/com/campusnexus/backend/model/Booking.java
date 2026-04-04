@@ -42,8 +42,6 @@ public class Booking {
     @Min(value = 1, message = "Attendee count must be at least 1")
     private int attendeeCount;
 
-    @NotNull(message = "Booking status is required")
-    @NotNull(message = "Booking status is required")
     @Enumerated(EnumType.STRING)
     private BookingStatus status;
 
