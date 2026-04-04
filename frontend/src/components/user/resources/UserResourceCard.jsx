@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { FiMapPin, FiUsers, FiImage, FiBookOpen } from "react-icons/fi";
 import UserResourceDetailsModal from "./UserResourceDetailsModal";
 
@@ -22,6 +23,7 @@ const NON_BOOKABLE_TYPES = [
 ];
 
 export default function UserResourceCard({ resource }) {
+  const navigate = useNavigate();
   const [showDetails, setShowDetails] = useState(false);
 
   const isActive = resource.status === "ACTIVE";
@@ -39,7 +41,7 @@ export default function UserResourceCard({ resource }) {
 
   const handleBooking = () => {
     if (!isBookable) return;
-    alert(`Booking resource: ${resource.name}`);
+    navigate("/booking", { state: { resourceId: resource.id } });
   };
 
   const formatType = (type) => {

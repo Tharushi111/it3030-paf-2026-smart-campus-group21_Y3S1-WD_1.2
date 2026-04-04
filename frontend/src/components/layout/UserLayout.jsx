@@ -13,6 +13,7 @@ import {
   FiBell,
   FiUser,
   FiTool,
+  FiBookOpen,
 } from "react-icons/fi";
 
 export default function UserLayout() {
@@ -74,6 +75,11 @@ export default function UserLayout() {
             <Link to="/tickets" className={navLinkClass("/tickets")}>
               <FiTool size={16} />
               Tickets
+            </Link>
+
+            <Link to="/booking" className={navLinkClass("/booking")}>
+              <FiBookOpen size={16} />
+              My Bookings
             </Link>
 
             <Link to="/about" className={navLinkClass("/about")}>
@@ -140,6 +146,10 @@ export default function UserLayout() {
             <FiTool size={16} />
             Tickets
           </Link>
+          <Link to="/booking" className={navLinkClass("/booking")}>
+            <FiBookOpen size={16} />
+            Bookings
+          </Link>
           <Link to="/about" className={navLinkClass("/about")}>
             <FiInfo size={16} />
             About
@@ -188,6 +198,11 @@ export default function UserLayout() {
                 <li>
                   <Link to="/tickets" className="hover:text-orange-400">
                     Tickets
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/booking" className="hover:text-orange-400">
+                    My Bookings
                   </Link>
                 </li>
                 <li>
