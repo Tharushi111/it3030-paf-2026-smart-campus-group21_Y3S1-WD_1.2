@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { FiSave, FiX, FiCalendar } from "react-icons/fi";
-import { createBooking } from "../../../services/bookingService";
+import { createBooking, updateBooking } from "../../../services/bookingService";
 import { getAllResources } from "../../../services/resourceApi";
 
 const DEMO_USER_ID = "user1";
@@ -15,9 +15,11 @@ export default function CreateBookingForm({
   onClose,
   onCreated,
   initialResourceId = null,
+  editingBooking = null,
 }) {
   const [resources, setResources] = useState([]);
   const [loadingList, setLoadingList] = useState(true);
+
   const [form, setForm] = useState({
     resourceId: "",
     date: "",
@@ -26,6 +28,7 @@ export default function CreateBookingForm({
     purpose: "",
     attendeeCount: "1",
   });
+
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -36,207 +39,216 @@ export default function CreateBookingForm({
         const res = await getAllResources();
         if (!cancelled) setResources(res.data || []);
       } catch {
-        if (!cancelled) toast.error("Failed to load resources");
+        toast.error("Failed to load resources");
       } finally {
-        if (!cancelled) setLoadingList(false);
+        setLoadingList(false);
       }
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => (cancelled = true);
   }, []);
 
+  // Prefill resource if clicked from Resource Card
   useEffect(() => {
-    if (initialResourceId == null || !resources.length) return;
-    const idStr = String(initialResourceId);
-    const exists = resources.some((r) => String(r.id) === idStr);
-    if (exists) {
-      setForm((prev) => ({ ...prev, resourceId: idStr }));
+    if (initialResourceId && resources.length) {
+      setForm((prev) => ({
+        ...prev,
+        resourceId: String(initialResourceId),
+      }));
     }
   }, [initialResourceId, resources]);
 
+  // Prefill form when editing
+  useEffect(() => {
+    if (editingBooking) {
+      setForm({
+        resourceId: String(editingBooking.resourceId),
+        date: editingBooking.date,
+        startTime: editingBooking.startTime?.slice(0, 5),
+        endTime: editingBooking.endTime?.slice(0, 5),
+        purpose: editingBooking.purpose,
+        attendeeCount: String(editingBooking.attendeeCount),
+      });
+    }
+  }, [editingBooking]);
+
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  // Validation
+  const validate = () => {
+    if (!form.resourceId) return "Please select a resource";
+    if (!form.date) return "Date is required";
+
+    const today = new Date().toISOString().split("T")[0];
+    if (form.date < today) return "Cannot select past date";
+
+    if (!form.startTime || !form.endTime) return "Time is required";
+    if (form.endTime <= form.startTime)
+      return "End time must be after start time";
+
+    if (!form.purpose.trim()) return "Purpose is required";
+
+    if (Number(form.attendeeCount) < 1) return "Attendees must be at least 1";
+
+    return null;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.resourceId) {
-      toast.error("Please select a resource");
-      return;
-    }
-    const n = Number(form.attendeeCount);
-    if (!Number.isFinite(n) || n < 1) {
-      toast.error("Attendees must be at least 1");
-      return;
-    }
-    if (form.endTime <= form.startTime) {
-      toast.error("End time must be after start time");
-      return;
-    }
+
+    const error = validate();
+    if (error) return toast.error(error);
 
     try {
       setSubmitting(true);
-      await createBooking({
+
+      const payload = {
         resourceId: Number(form.resourceId),
         userId: DEMO_USER_ID,
         date: form.date,
         startTime: toLocalTime(form.startTime),
         endTime: toLocalTime(form.endTime),
         purpose: form.purpose.trim(),
-        attendeeCount: n,
-      });
-      toast.success("Booking request submitted");
+        attendeeCount: Number(form.attendeeCount),
+      };
+
+      if (editingBooking) {
+        await updateBooking(editingBooking.id, payload);
+        toast.success("Booking updated");
+      } else {
+        await createBooking(payload);
+        toast.success("Booking request submitted");
+      }
+
       onCreated?.();
       onClose?.();
     } catch (err) {
-      const msg = err?.response?.data?.message || err?.message;
-      toast.error(typeof msg === "string" ? msg : "Failed to create booking");
+      toast.error(err?.response?.data?.message || "Operation failed");
     } finally {
       setSubmitting(false);
     }
   };
 
+  const today = new Date().toISOString().split("T")[0];
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6 backdrop-blur-sm">
       <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
+        {/* HEADER */}
         <div className="flex items-center justify-between border-b border-orange-100 bg-gradient-to-r from-orange-500 to-amber-400 px-6 py-4 text-white">
-          <div>
-            <h2 className="text-2xl font-bold">New booking</h2>
-            <p className="text-sm text-orange-50">Reserve a campus resource</p>
+          <div className="flex items-center gap-3">
+            <h2 className="text-2xl font-bold">
+              {editingBooking ? "Edit booking" : "New booking"}
+            </h2>
+            {editingBooking && (
+              <span className="inline-block rounded bg-yellow-200 px-2 py-1 text-xs font-medium text-black">
+                Editing
+              </span>
+            )}
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-full bg-white/15 p-2 transition hover:bg-white/25"
-          >
-            <FiX size={18} />
+          <button onClick={onClose}>
+            <FiX />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6">
-          <div className="mb-4 flex items-center gap-2 rounded-2xl border border-orange-100 bg-orange-50/80 px-4 py-3 text-sm text-slate-600">
-            <FiCalendar className="shrink-0 text-orange-500" />
-            <span>
-              A booking always reserves <strong>one</strong> room or item so we can check the
-              schedule and avoid double-booking. Requests stay <strong>pending</strong> until
-              staff approve. Demo user: <strong>{DEMO_USER_ID}</strong>
-            </span>
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {/* Resource */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Resource
+            </label>
+            <select
+              name="resourceId"
+              value={form.resourceId}
+              onChange={handleChange}
+              className="mt-1 block w-full rounded-md border px-3 py-2 text-black focus:outline-none focus:ring focus:ring-orange-300"
+            >
+              <option value="">Select a resource</option>
+              {resources.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name} ({r.location})
+                </option>
+              ))}
+            </select>
           </div>
 
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-            <div className="md:col-span-2">
-              <label className="mb-2 block text-sm font-medium text-slate-600">
-                Resource *
-              </label>
-              <p className="mb-2 text-xs text-slate-500">
-                Choose what you are booking. If you used <strong>Book</strong> on the Resources
-                page, it may already be selected below.
-              </p>
-              <select
-                required
-                name="resourceId"
-                value={form.resourceId}
-                onChange={handleChange}
-                disabled={loadingList}
-                className="w-full rounded-2xl border border-orange-200 bg-orange-50/50 px-4 py-3 text-slate-700 outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-200 disabled:opacity-60"
-              >
-                <option value="">
-                  {loadingList ? "Loading…" : "Select a resource"}
-                </option>
-                {resources.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name} — {r.type} ({r.location})
-                  </option>
-                ))}
-              </select>
-            </div>
+          {/* Date */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Date</label>
+            <input
+              type="date"
+              name="date"
+              min={today}
+              value={form.date}
+              onChange={handleChange}
+              className="mt-1 block w-full rounded-md border px-3 py-2 text-black focus:outline-none focus:ring focus:ring-orange-300"
+            />
+          </div>
 
-            <div className="md:col-span-2">
-              <label className="mb-2 block text-sm font-medium text-slate-600">Date *</label>
-              <input
-                required
-                type="date"
-                name="date"
-                value={form.date}
-                onChange={handleChange}
-                className="w-full rounded-2xl border border-orange-200 bg-orange-50/50 px-4 py-3 text-slate-700 outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
-              />
-            </div>
-
+          {/* Start / End Time */}
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-600">
-                Start *
+              <label className="block text-sm font-medium text-gray-700">
+                Start Time
               </label>
               <input
-                required
                 type="time"
                 name="startTime"
                 value={form.startTime}
                 onChange={handleChange}
-                className="w-full rounded-2xl border border-orange-200 bg-white px-4 py-3 text-slate-700 outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
+                className="mt-1 block w-full rounded-md border px-3 py-2 text-black focus:outline-none focus:ring focus:ring-orange-300"
               />
             </div>
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-600">End *</label>
+              <label className="block text-sm font-medium text-gray-700">
+                End Time
+              </label>
               <input
-                required
                 type="time"
                 name="endTime"
                 value={form.endTime}
                 onChange={handleChange}
-                className="w-full rounded-2xl border border-orange-200 bg-white px-4 py-3 text-slate-700 outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="mb-2 block text-sm font-medium text-slate-600">
-                Purpose *
-              </label>
-              <textarea
-                required
-                name="purpose"
-                value={form.purpose}
-                onChange={handleChange}
-                rows={3}
-                maxLength={200}
-                placeholder="What is this booking for?"
-                className="w-full resize-none rounded-2xl border border-orange-200 bg-white px-4 py-3 text-slate-700 placeholder-slate-400 outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="mb-2 block text-sm font-medium text-slate-600">
-                Attendees *
-              </label>
-              <input
-                required
-                type="number"
-                min={1}
-                name="attendeeCount"
-                value={form.attendeeCount}
-                onChange={handleChange}
-                className="w-full rounded-2xl border border-orange-200 bg-white px-4 py-3 text-slate-700 outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
+                className="mt-1 block w-full rounded-md border px-3 py-2 text-black focus:outline-none focus:ring focus:ring-orange-300"
               />
             </div>
           </div>
 
-          <div className="mt-6 flex flex-col-reverse gap-3 border-t border-orange-100 pt-6 sm:flex-row sm:justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-2xl border border-orange-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-orange-50"
-            >
-              Close
-            </button>
+          {/* Purpose */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Purpose</label>
+            <input
+              type="text"
+              name="purpose"
+              value={form.purpose}
+              onChange={handleChange}
+              className="mt-1 block w-full rounded-md border px-3 py-2 text-black focus:outline-none focus:ring focus:ring-orange-300"
+              placeholder="Meeting, study session, etc."
+            />
+          </div>
+
+          {/* Attendee Count */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Attendees</label>
+            <input
+              type="number"
+              name="attendeeCount"
+              value={form.attendeeCount}
+              onChange={handleChange}
+              min={1}
+              className="mt-1 block w-full rounded-md border px-3 py-2 text-black focus:outline-none focus:ring focus:ring-orange-300"
+            />
+          </div>
+
+          {/* Submit */}
+          <div className="flex justify-end gap-2">
             <button
               type="submit"
-              disabled={submitting || loadingList}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-400 px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:scale-[1.02] disabled:opacity-50"
+              disabled={submitting}
+              className="inline-flex items-center gap-2 rounded bg-orange-500 px-4 py-2 text-white hover:bg-orange-600"
             >
-              <FiSave size={18} />
-              {submitting ? "Submitting…" : "Submit request"}
+              <FiSave />
+              {editingBooking ? "Update Booking" : "Submit request"}
             </button>
           </div>
         </form>
