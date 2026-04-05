@@ -5,6 +5,7 @@ const API = axios.create({
 });
 
 export const createBooking = (data) => API.post("", data);
+export const updateBooking = (id, data) => API.put(`/${id}`, data); // ✅ NEW
 export const getAllBookings = () => API.get("");
 export const getBookingsByUserId = (userId) =>
   API.get(`/user/${encodeURIComponent(userId)}`);
