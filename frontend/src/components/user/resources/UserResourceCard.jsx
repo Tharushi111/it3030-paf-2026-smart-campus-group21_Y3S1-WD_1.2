@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { FiMapPin, FiUsers, FiImage, FiBookOpen } from "react-icons/fi";
 import UserResourceDetailsModal from "./UserResourceDetailsModal";
+import { useAuth } from "../../../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const NON_CAPACITY_TYPES = [
   "PROJECTOR",
@@ -23,9 +25,12 @@ const NON_BOOKABLE_TYPES = [
 
 export default function UserResourceCard({ resource }) {
   const [showDetails, setShowDetails] = useState(false);
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   const isActive = resource.status === "ACTIVE";
-  const isBookable = isActive && !NON_BOOKABLE_TYPES.includes(resource.type);
+  const isBaseBookable = isActive && !NON_BOOKABLE_TYPES.includes(resource.type);
+  const canBook = !!user && isBaseBookable;
 
   const statusClasses = isActive
     ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
@@ -37,29 +42,33 @@ export default function UserResourceCard({ resource }) {
 
   const isCapacityApplicable = !NON_CAPACITY_TYPES.includes(resource.type);
 
-  const handleBooking = () => {
-    if (!isBookable) return;
-    alert(`Booking resource: ${resource.name}`);
-  };
-
-  const formatType = (type) => {
-    return type?.replaceAll("_", " ");
-  };
+  const formatType = (type) => type?.replaceAll("_", " ");
 
   const getDisabledReason = () => {
     if (!isActive) return "Resource is not available for booking";
     if (NON_BOOKABLE_TYPES.includes(resource.type)) {
       return `${formatType(resource.type)} spaces cannot be booked`;
     }
+    if (!user) return "Please log in to book this resource";
     return "";
   };
 
   const disabledReason = getDisabledReason();
 
+  const handleBooking = () => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+
+    if (!isBaseBookable) return;
+
+    alert(`Booking resource: ${resource.name}`);
+  };
+
   return (
     <>
       <div className="group flex h-full flex-col overflow-hidden rounded-3xl border border-orange-100 bg-white shadow-md transition-all hover:-translate-y-1 hover:border-orange-300 hover:shadow-xl">
-        {/* Resource Image */}
         <div className="relative h-44 w-full overflow-hidden bg-orange-50 flex-shrink-0">
           {imageUrl ? (
             <img
@@ -73,13 +82,11 @@ export default function UserResourceCard({ resource }) {
             </div>
           )}
 
-          {/* Type badge */}
           <div className="absolute left-3 top-3 rounded-full bg-gradient-to-r from-orange-500 to-amber-400 px-3 py-1.5 text-xs font-bold text-white shadow-lg">
             {formatType(resource.type)}
           </div>
         </div>
 
-        {/* Content */}
         <div className="flex flex-1 flex-col p-5">
           <div className="flex-1">
             <div className="mb-4 flex items-start justify-between gap-3">
@@ -98,7 +105,6 @@ export default function UserResourceCard({ resource }) {
               </div>
             </div>
 
-            {/* Resource details */}
             <div className="space-y-2 text-sm text-slate-600">
               <div className="flex items-center gap-2">
                 <FiMapPin className="text-orange-500" size={14} />
@@ -114,7 +120,6 @@ export default function UserResourceCard({ resource }) {
             </div>
           </div>
 
-          {/* Buttons - always at bottom */}
           <div className="mt-4 flex gap-2">
             <button
               onClick={() => setShowDetails(true)}
@@ -125,22 +130,21 @@ export default function UserResourceCard({ resource }) {
 
             <button
               onClick={handleBooking}
-              disabled={!isBookable}
+              disabled={!isBaseBookable}
               title={disabledReason}
               className={`flex-1 rounded-xl py-2 text-sm font-medium transition flex items-center justify-center gap-1 ${
-                isBookable
+                isBaseBookable
                   ? "bg-gradient-to-r from-orange-500 to-amber-400 text-white shadow-md hover:scale-105 hover:shadow-lg"
                   : "bg-gray-200 text-gray-400 cursor-not-allowed"
               }`}
             >
               <FiBookOpen size={14} />
-              Book
+              {user ? "Book" : "Login to Book"}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Details Modal */}
       {showDetails && (
         <UserResourceDetailsModal
           resource={resource}
