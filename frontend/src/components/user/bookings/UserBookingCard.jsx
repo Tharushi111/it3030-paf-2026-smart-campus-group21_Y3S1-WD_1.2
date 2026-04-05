@@ -1,4 +1,4 @@
-import { FiMapPin, FiCalendar, FiClock, FiUsers, FiXCircle } from "react-icons/fi";
+import { FiMapPin, FiCalendar, FiClock, FiUsers, FiXCircle, FiEdit } from "react-icons/fi";
 
 function formatTime(t) {
   if (t == null) return "—";
@@ -21,7 +21,7 @@ function statusClasses(status) {
   }
 }
 
-export default function UserBookingCard({ booking, resource, onCancel, canCancel }) {
+export default function UserBookingCard({ booking, resource, onCancel, onEdit, canCancel }) {
   const title = resource?.name || `Resource #${booking.resourceId}`;
 
   return (
@@ -89,18 +89,30 @@ export default function UserBookingCard({ booking, resource, onCancel, canCancel
           </div>
         )}
 
-        {canCancel && (
-          <div className="mt-4">
+        {/* ✅ ACTION BUTTONS */}
+        <div className="mt-4 flex gap-2">
+          {canCancel && (
             <button
               type="button"
               onClick={() => onCancel(booking.id)}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-100"
+              className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-100"
             >
               <FiXCircle size={14} />
-              Cancel booking
+              Cancel
             </button>
-          </div>
-        )}
+          )}
+
+          {onEdit && (
+            <button
+              type="button"
+              onClick={() => onEdit(booking)}
+              className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 py-2.5 text-sm font-medium text-blue-700 transition hover:bg-blue-100"
+            >
+              <FiEdit size={14} />
+              Edit
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
