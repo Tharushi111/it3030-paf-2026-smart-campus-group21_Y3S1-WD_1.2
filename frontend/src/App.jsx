@@ -15,10 +15,13 @@ import AdminDashboard from "./components/admin/AdminDashboard.jsx";
 import ResourceManagementPage from "./components/admin/pages/resources/ResourceManagementPage.jsx";
 import AdminTicketManagementPage from "./components/admin/pages/tickets/AdminTicketManagementPage.jsx";
 
+import StaffLayout from "./components/layout/StaffLayout.jsx";
+import StaffDashboard from "./components/staff/StaffDashboard.jsx";
+import AssignedTicketsPage from "./components/staff/tickets/AssignedTicketsPage.jsx";
+
 import UserLayout from "./components/layout/UserLayout.jsx";
 import AdminLayout from "./components/layout/AdminLayout.jsx";
 
-/* Protected Route */
 function ProtectedRoute() {
   const { user, loading } = useAuth();
 
@@ -33,7 +36,6 @@ function ProtectedRoute() {
   return user ? <Outlet /> : <Navigate to="/login" replace />;
 }
 
-/* Admin Route */
 function AdminRoute() {
   const { user, loading } = useAuth();
 
@@ -48,7 +50,20 @@ function AdminRoute() {
   return user?.role === "ADMIN" ? <Outlet /> : <Navigate to="/" replace />;
 }
 
-/* Public Only Route */
+function StaffRoute() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-orange-50 text-lg font-semibold text-orange-600">
+        Loading...
+      </div>
+    );
+  }
+
+  return user?.role === "STAFF" ? <Outlet /> : <Navigate to="/" replace />;
+}
+
 function PublicOnlyRoute() {
   const { user, loading } = useAuth();
 
@@ -61,13 +76,21 @@ function PublicOnlyRoute() {
   }
 
   return user ? (
-    <Navigate to={user.role === "ADMIN" ? "/admin" : "/dashboard"} replace />
+    <Navigate
+      to={
+        user.role === "ADMIN"
+          ? "/admin"
+          : user.role === "STAFF"
+          ? "/staff"
+          : "/dashboard"
+      }
+      replace
+    />
   ) : (
     <Outlet />
   );
 }
 
-/* Root Route */
 function RootRoute() {
   const { user, loading } = useAuth();
 
@@ -83,43 +106,49 @@ function RootRoute() {
     return <Navigate to="/admin" replace />;
   }
 
+  if (user?.role === "STAFF") {
+    return <Navigate to="/staff" replace />;
+  }
+
   return <HomePage />;
 }
 
 export default function App() {
   return (
     <Routes>
-      {/* User Side */}
       <Route element={<UserLayout />}>
         <Route index element={<RootRoute />} />
         <Route path="about" element={<AboutPage />} />
         <Route path="contact" element={<ContactPage />} />
-
-        {/* Public resources page */}
         <Route path="resources" element={<UserResourcesPage />} />
 
-        {/* Guest only */}
         <Route element={<PublicOnlyRoute />}>
           <Route path="login" element={<LoginPage />} />
         </Route>
 
-        {/* Logged user only */}
         <Route element={<ProtectedRoute />}>
           <Route path="dashboard" element={<UserDashboard />} />
           <Route path="tickets" element={<MyTicketsPage />} />
         </Route>
 
-        {/* 404 inside user layout */}
         <Route path="*" element={<NotFoundPage />} />
       </Route>
 
-      {/* Admin Side */}
       <Route element={<ProtectedRoute />}>
         <Route element={<AdminRoute />}>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
             <Route path="resources" element={<ResourceManagementPage />} />
             <Route path="tickets" element={<AdminTicketManagementPage />} />
+          </Route>
+        </Route>
+      </Route>
+
+      <Route element={<ProtectedRoute />}>
+        <Route element={<StaffRoute />}>
+          <Route path="/staff" element={<StaffLayout />}>
+            <Route index element={<StaffDashboard />} />
+            <Route path="tickets" element={<AssignedTicketsPage />} />
           </Route>
         </Route>
       </Route>

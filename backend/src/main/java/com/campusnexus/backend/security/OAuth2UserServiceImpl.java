@@ -27,6 +27,9 @@ public class OAuth2UserServiceImpl implements OAuth2UserService<OAuth2UserReques
     @Value("${app.admin.emails:}")
     private String adminEmailsProperty;
 
+    @Value("${app.staff.emails:}")
+    private String staffEmailsProperty;
+
     public OAuth2UserServiceImpl(AppUserRepository userRepository) {
         this.userRepository = userRepository;
     }
@@ -54,10 +57,29 @@ public class OAuth2UserServiceImpl implements OAuth2UserService<OAuth2UserReques
                 .map(String::toLowerCase)
                 .collect(Collectors.toSet());
 
-        Role assignedRole = adminEmails.contains(email.toLowerCase()) ? Role.ADMIN : Role.USER;
+        Set<String> staffEmails = Arrays.stream(staffEmailsProperty.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isBlank())
+                .map(String::toLowerCase)
+                .collect(Collectors.toSet());
+
+        System.out.println("Admin emails: " + adminEmails);
+        System.out.println("Staff emails: " + staffEmails);
+
+        Role assignedRole;
+        if (adminEmails.contains(email.toLowerCase())) {
+            assignedRole = Role.ADMIN;
+        } else if (staffEmails.contains(email.toLowerCase())) {
+            assignedRole = Role.STAFF;
+        } else {
+            assignedRole = Role.USER;
+        }
+
+        System.out.println("Assigned role for " + email + " = " + assignedRole);
 
         AppUser user = userRepository.findByEmail(email)
                 .map(existing -> {
+                    System.out.println("Existing user found in DB with role: " + existing.getRole());
                     existing.setFullName(name != null ? name : existing.getFullName());
                     existing.setProfileImageUrl(picture);
                     existing.setRole(assignedRole);
@@ -65,18 +87,20 @@ public class OAuth2UserServiceImpl implements OAuth2UserService<OAuth2UserReques
                     existing.setActive(true);
                     return existing;
                 })
-                .orElseGet(() -> AppUser.builder()
-                        .fullName(name != null ? name : "Google User")
-                        .email(email)
-                        .profileImageUrl(picture)
-                        .role(assignedRole)
-                        .provider(AuthProvider.GOOGLE)
-                        .active(true)
-                        .build());
+                .orElseGet(() -> {
+                    System.out.println("Creating new user with role: " + assignedRole);
+                    return AppUser.builder()
+                            .fullName(name != null ? name : "Google User")
+                            .email(email)
+                            .profileImageUrl(picture)
+                            .role(assignedRole)
+                            .provider(AuthProvider.GOOGLE)
+                            .active(true)
+                            .build();
+                });
 
         AppUser savedUser = userRepository.save(user);
-
-        System.out.println("Saved user to DB: " + savedUser.getEmail() + " | role: " + savedUser.getRole());
+        System.out.println("Saved user role in DB: " + savedUser.getRole());
 
         List<GrantedAuthority> authorities = List.of(
                 new SimpleGrantedAuthority("ROLE_" + assignedRole.name())

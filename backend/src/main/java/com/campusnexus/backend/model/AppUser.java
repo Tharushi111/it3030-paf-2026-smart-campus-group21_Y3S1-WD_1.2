@@ -35,6 +35,7 @@ public class AppUser {
     @Column(nullable = false)
     private AuthProvider provider;
 
+    @Builder.Default
     @Column(nullable = false)
     private boolean active = true;
 }

@@ -7,6 +7,7 @@ import com.campusnexus.backend.model.Role;
 import com.campusnexus.backend.repository.AppUserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -24,6 +25,12 @@ import java.util.stream.Collectors;
 public class AuthController {
 
     private final AppUserRepository userRepository;
+
+    @Value("${app.admin.emails:}")
+    private String adminEmailsProperty;
+
+    @Value("${app.staff.emails:}")
+    private String staffEmailsProperty;
 
     public AuthController(AppUserRepository userRepository) {
         this.userRepository = userRepository;
@@ -50,41 +57,72 @@ public class AuthController {
         String name = oauth2User.getAttribute("name");
         String picture = oauth2User.getAttribute("picture");
 
-        System.out.println("Authenticated email in /me: " + email);
-
         if (email == null || email.isBlank()) {
             return ResponseEntity.status(401).body(Map.of("message", "Email not found"));
         }
 
-        Role assignedRole = email.equalsIgnoreCase("campusnexus29@gmail.com")
-                ? Role.ADMIN
-                : Role.USER;
+        Set<String> adminEmails = Arrays.stream(adminEmailsProperty.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isBlank())
+                .map(String::toLowerCase)
+                .collect(Collectors.toSet());
+
+        Set<String> staffEmails = Arrays.stream(staffEmailsProperty.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isBlank())
+                .map(String::toLowerCase)
+                .collect(Collectors.toSet());
+
+        Role assignedRole;
+        if (adminEmails.contains(email.toLowerCase())) {
+            assignedRole = Role.ADMIN;
+        } else if (staffEmails.contains(email.toLowerCase())) {
+            assignedRole = Role.STAFF;
+        } else {
+            assignedRole = Role.USER;
+        }
 
         AppUser user = userRepository.findByEmail(email)
-                .orElseGet(() -> {
-                    AppUser newUser = AppUser.builder()
-                            .fullName(name != null ? name : "Google User")
-                            .email(email)
-                            .profileImageUrl(picture)
-                            .role(assignedRole)
-                            .provider(AuthProvider.GOOGLE)
-                            .active(true)
-                            .build();
+                .map(existing -> {
+                    existing.setFullName(name != null ? name : existing.getFullName());
+                    existing.setProfileImageUrl(picture);
+                    existing.setRole(assignedRole);
+                    existing.setProvider(AuthProvider.GOOGLE);
+                    existing.setActive(true);
+                    return existing;
+                })
+                .orElseGet(() -> AppUser.builder()
+                        .fullName(name != null ? name : "Google User")
+                        .email(email)
+                        .profileImageUrl(picture)
+                        .role(assignedRole)
+                        .provider(AuthProvider.GOOGLE)
+                        .active(true)
+                        .build());
 
-                    AppUser saved = userRepository.save(newUser);
-                    System.out.println("User auto-created in /me: " + saved.getEmail());
-                    return saved;
-                });
+        AppUser savedUser = userRepository.save(user);
 
         return ResponseEntity.ok(
                 UserResponse.builder()
-                        .id(user.getId())
-                        .fullName(user.getFullName())
-                        .email(user.getEmail())
-                        .profileImageUrl(user.getProfileImageUrl())
-                        .role(user.getRole())
+                        .id(savedUser.getId())
+                        .fullName(savedUser.getFullName())
+                        .email(savedUser.getEmail())
+                        .profileImageUrl(savedUser.getProfileImageUrl())
+                        .role(savedUser.getRole())
                         .build()
         );
+    }
+
+    @GetMapping("/debug-role")
+    public ResponseEntity<?> debugRole(Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(401).body(Map.of("message", "No authentication"));
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "name", authentication.getName(),
+                "authorities", authentication.getAuthorities().toString()
+        ));
     }
 
     @PostMapping("/logout")
