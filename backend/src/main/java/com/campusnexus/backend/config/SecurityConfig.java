@@ -1,5 +1,6 @@
 package com.campusnexus.backend.config;
 
+import com.campusnexus.backend.security.CustomOidcUserService;
 import com.campusnexus.backend.security.OAuth2UserServiceImpl;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,12 +20,15 @@ import java.util.List;
 public class SecurityConfig {
 
     private final OAuth2UserServiceImpl oAuth2UserService;
+    private final CustomOidcUserService customOidcUserService;
 
     @Value("${app.frontend.url}")
     private String frontendUrl;
 
-    public SecurityConfig(OAuth2UserServiceImpl oAuth2UserService) {
+    public SecurityConfig(OAuth2UserServiceImpl oAuth2UserService,
+                          CustomOidcUserService customOidcUserService) {
         this.oAuth2UserService = oAuth2UserService;
+        this.customOidcUserService = customOidcUserService;
     }
 
     @Bean
@@ -37,27 +41,22 @@ public class SecurityConfig {
                         .requestMatchers("/oauth2/**", "/login/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
 
-                        // Resources
                         .requestMatchers(HttpMethod.GET, "/api/resources/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/resources/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/resources/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/resources/**").hasRole("ADMIN")
 
-                        // Tickets - logged in users
-                        .requestMatchers(HttpMethod.GET, "/api/tickets/my").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/tickets/assigned").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/tickets/staff").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/api/tickets").authenticated()
-                        .requestMatchers(HttpMethod.PUT, "/api/tickets/*").authenticated()
-                        .requestMatchers(HttpMethod.DELETE, "/api/tickets/*").authenticated()
+                         // Tickets
+                         .requestMatchers(HttpMethod.POST, "/api/tickets").authenticated()
+                         .requestMatchers(HttpMethod.GET, "/api/tickets/my").authenticated()
+                         .requestMatchers(HttpMethod.GET, "/api/tickets/assigned").hasAnyRole("STAFF", "ADMIN")
+                         .requestMatchers(HttpMethod.GET, "/api/tickets").hasRole("ADMIN")
+                         .requestMatchers(HttpMethod.GET, "/api/tickets/*").authenticated()
+                         .requestMatchers(HttpMethod.PUT, "/api/tickets/*").authenticated()
+                         .requestMatchers(HttpMethod.DELETE, "/api/tickets/*").authenticated()
+                         .requestMatchers(HttpMethod.PATCH, "/api/tickets/*/assign").hasRole("ADMIN")
+                         .requestMatchers(HttpMethod.PATCH, "/api/tickets/*/status").hasAnyRole("STAFF", "ADMIN")
 
-                        // Admin / staff actions
-                        .requestMatchers(HttpMethod.PATCH, "/api/tickets/*/assign").authenticated()
-                        .requestMatchers(HttpMethod.PATCH, "/api/tickets/*/status").authenticated()
-                        // General ticket viewing
-                        .requestMatchers(HttpMethod.GET, "/api/tickets/**").authenticated()
-
-                        // Other admin APIs
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
                         .anyRequest().authenticated()
@@ -75,12 +74,18 @@ public class SecurityConfig {
                         )
                 )
                 .oauth2Login(oauth -> oauth
-                        .userInfoEndpoint(userInfo -> userInfo.userService(oAuth2UserService))
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(oAuth2UserService)
+                                .oidcUserService(customOidcUserService)
+                        )
                         .defaultSuccessUrl(frontendUrl + "/", true)
                 )
                 .logout(logout -> logout
                         .logoutUrl("/logout")
                         .logoutSuccessUrl(frontendUrl + "/login")
+                        .invalidateHttpSession(true)
+                        .clearAuthentication(true)
+                        .deleteCookies("JSESSIONID")
                 );
 
         return http.build();

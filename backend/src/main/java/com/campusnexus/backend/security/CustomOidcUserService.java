@@ -7,22 +7,20 @@ import com.campusnexus.backend.repository.AppUserRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
-import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
-import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
+import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
+import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
-import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
-import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-public class OAuth2UserServiceImpl implements OAuth2UserService<OAuth2UserRequest, OAuth2User> {
+public class CustomOidcUserService extends OidcUserService {
 
     private final AppUserRepository userRepository;
-    private final DefaultOAuth2UserService delegate = new DefaultOAuth2UserService();
 
     @Value("${app.admin.emails:}")
     private String adminEmailsProperty;
@@ -30,17 +28,17 @@ public class OAuth2UserServiceImpl implements OAuth2UserService<OAuth2UserReques
     @Value("${app.staff.emails:}")
     private String staffEmailsProperty;
 
-    public OAuth2UserServiceImpl(AppUserRepository userRepository) {
+    public CustomOidcUserService(AppUserRepository userRepository) {
         this.userRepository = userRepository;
     }
 
     @Override
-    public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
-        OAuth2User oauth2User = delegate.loadUser(userRequest);
+    public OidcUser loadUser(OidcUserRequest userRequest) throws OAuth2AuthenticationException {
+        OidcUser oidcUser = super.loadUser(userRequest);
 
-        String email = oauth2User.getAttribute("email");
-        String name = oauth2User.getAttribute("name");
-        String picture = oauth2User.getAttribute("picture");
+        String email = oidcUser.getEmail();
+        String name = oidcUser.getFullName();
+        String picture = oidcUser.getPicture();
 
         if (email == null || email.isBlank()) {
             throw new OAuth2AuthenticationException("Google account email is required");
@@ -80,18 +78,15 @@ public class OAuth2UserServiceImpl implements OAuth2UserService<OAuth2UserReques
 
         AppUser savedUser = userRepository.save(user);
 
-        List<GrantedAuthority> authorities = List.of(
-                new SimpleGrantedAuthority("ROLE_" + savedUser.getRole().name())
+        Set<GrantedAuthority> mappedAuthorities = new HashSet<>(oidcUser.getAuthorities());
+        mappedAuthorities.add(new SimpleGrantedAuthority("ROLE_" + savedUser.getRole().name()));
+
+        return new DefaultOidcUser(
+                mappedAuthorities,
+                oidcUser.getIdToken(),
+                oidcUser.getUserInfo(),
+                "email"
         );
-
-        Map<String, Object> attributes = new HashMap<>(oauth2User.getAttributes());
-        attributes.put("appUserId", savedUser.getId());
-        attributes.put("role", savedUser.getRole().name());
-        attributes.put("email", savedUser.getEmail());
-        attributes.put("fullName", savedUser.getFullName());
-        attributes.put("profileImageUrl", savedUser.getProfileImageUrl());
-
-        return new DefaultOAuth2User(authorities, attributes, "email");
     }
 
     private Set<String> parseEmails(String emailsProperty) {

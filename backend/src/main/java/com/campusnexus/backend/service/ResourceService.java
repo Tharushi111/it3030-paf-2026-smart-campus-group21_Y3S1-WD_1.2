@@ -24,6 +24,7 @@ public class ResourceService {
     private static final Set<String> ALLOWED_TYPES = Set.of(
             "LAB",
             "LECTURE_HALL",
+            "MEETING_ROOM",
             "AUDITORIUM",
             "LIBRARY_FLOOR",
             "STUDY_AREA",
@@ -149,11 +150,11 @@ public class ResourceService {
             throw new IllegalArgumentException("Resource name is required");
         }
 
-        if (name.length() > 100) {
+        if (name.trim().length() > 100) {
             throw new IllegalArgumentException("Resource name must not exceed 100 characters");
         }
 
-        if (!TEXT_PATTERN.matcher(name).matches()) {
+        if (!TEXT_PATTERN.matcher(name.trim()).matches()) {
             throw new IllegalArgumentException("Resource name contains invalid characters");
         }
 
@@ -169,11 +170,11 @@ public class ResourceService {
             throw new IllegalArgumentException("Location is required");
         }
 
-        if (location.length() > 200) {
+        if (location.trim().length() > 200) {
             throw new IllegalArgumentException("Location must not exceed 200 characters");
         }
 
-        if (!TEXT_PATTERN.matcher(location).matches()) {
+        if (!TEXT_PATTERN.matcher(location.trim()).matches()) {
             throw new IllegalArgumentException("Location contains invalid characters");
         }
 
@@ -241,10 +242,10 @@ public class ResourceService {
 
             Files.copy(image.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-            return "/uploads/" + fileName;
+            return "/uploads/resources/" + fileName;
 
         } catch (IOException e) {
-            throw new RuntimeException("Failed to save image");
+            throw new RuntimeException("Failed to save image", e);
         }
     }
 
@@ -254,11 +255,11 @@ public class ResourceService {
         }
 
         try {
-            String fileName = imageUrl.replace("/uploads/", "");
+            String fileName = imageUrl.replace("/uploads/resources/", "");
             Path filePath = Paths.get(uploadDir).toAbsolutePath().normalize().resolve(fileName);
             Files.deleteIfExists(filePath);
         } catch (IOException e) {
-            throw new RuntimeException("Failed to delete old image");
+            throw new RuntimeException("Failed to delete old image", e);
         }
     }
 }
