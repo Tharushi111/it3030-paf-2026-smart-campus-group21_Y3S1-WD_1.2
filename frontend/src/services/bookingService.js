@@ -2,17 +2,30 @@ import axios from "axios";
 
 const API = axios.create({
   baseURL: "http://localhost:9090/api/bookings",
+  withCredentials: true,
 });
 
-export const createBooking = (data) => API.post("", data);
-export const updateBooking = (id, data) => API.put(`/${id}`, data); // ✅ NEW
+export const createBooking = (resourceId, data) =>
+  API.post(`/resource/${resourceId}`, data);
+
+export const updateBooking = (id, resourceId, data) =>
+  API.put(`/${id}/resource/${resourceId}`, data);
+
+export const getMyBookings = () => API.get("/my");
+
 export const getAllBookings = () => API.get("");
-export const getBookingsByUserId = (userId) =>
-  API.get(`/user/${encodeURIComponent(userId)}`);
+
 export const getBookingById = (id) => API.get(`/${id}`);
-export const approveBooking = (id) => API.patch(`/${id}/approve`);
-export const rejectBooking = (id, remark) =>
-  API.patch(`/${id}/reject`, null, { params: { remark } });
-export const cancelBooking = (id, userId) =>
-  API.patch(`/${id}/cancel`, null, { params: { userId } });
+
+export const approveBooking = (id, adminRemark = "") =>
+  API.patch(`/${id}/approve`, { adminRemark });
+
+export const rejectBooking = (id, adminRemark) =>
+  API.patch(`/${id}/reject`, { adminRemark });
+
+export const cancelBooking = (id) => API.patch(`/${id}/cancel`);
+
 export const deleteBooking = (id) => API.delete(`/${id}`);
+
+export const getBookingQr = (id) =>
+  API.get(`/${id}/qr`, { responseType: "blob" });

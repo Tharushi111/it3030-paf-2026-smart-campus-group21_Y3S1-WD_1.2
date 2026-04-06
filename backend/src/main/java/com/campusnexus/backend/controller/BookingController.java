@@ -1,83 +1,116 @@
 package com.campusnexus.backend.controller;
 
+import com.campusnexus.backend.dto.BookingDecisionRequest;
+import com.campusnexus.backend.dto.BookingRequest;
+import com.campusnexus.backend.model.AppUser;
 import com.campusnexus.backend.model.Booking;
 import com.campusnexus.backend.model.BookingStatus;
+import com.campusnexus.backend.repository.AppUserRepository;
+import com.campusnexus.backend.service.BookingQrService;
 import com.campusnexus.backend.service.BookingService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/bookings")
-@CrossOrigin
 public class BookingController {
 
-    @Autowired
-    private BookingService bookingService;
+    private final BookingService bookingService;
+    private final BookingQrService bookingQrService;
+    private final AppUserRepository appUserRepository;
 
-    // Create a new booking
-    @PostMapping
-    public ResponseEntity<Booking> create(@Valid @RequestBody Booking booking) {
-        return ResponseEntity.ok(bookingService.createBooking(booking));
+    public BookingController(BookingService bookingService,
+                             BookingQrService bookingQrService,
+                             AppUserRepository appUserRepository) {
+        this.bookingService = bookingService;
+        this.bookingQrService = bookingQrService;
+        this.appUserRepository = appUserRepository;
     }
 
-    // Get all bookings
+    @PostMapping("/resource/{resourceId}")
+    public ResponseEntity<Booking> create(@PathVariable Long resourceId,
+                                          @Valid @RequestBody BookingRequest request,
+                                          @AuthenticationPrincipal OidcUser oidcUser) {
+        return ResponseEntity.ok(
+                bookingService.createBooking(resourceId, request, oidcUser.getEmail())
+        );
+    }
+
+    @GetMapping("/my")
+    public ResponseEntity<List<Booking>> getMyBookings(@AuthenticationPrincipal OidcUser oidcUser) {
+        return ResponseEntity.ok(
+                bookingService.getMyBookings(oidcUser.getEmail())
+        );
+    }
+
     @GetMapping
-    public ResponseEntity<List<Booking>> getAll() {
-        return ResponseEntity.ok(bookingService.getAllBookings());
+    public ResponseEntity<List<Booking>> getAll(@AuthenticationPrincipal OidcUser oidcUser) {
+        AppUser user = getCurrentUser(oidcUser);
+
+        if (user.getRole().name().equals("ADMIN")) {
+            return ResponseEntity.ok(bookingService.getAllBookings());
+        }
+
+        return ResponseEntity.ok(bookingService.getMyBookings(user.getEmail()));
     }
 
-    // ✅ Get bookings of a specific user, newest first
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Booking>> getByUser(@PathVariable String userId) {
-        List<Booking> bookings = bookingService.getBookingsByUserSorted(userId);
-        return ResponseEntity.ok(bookings);
-    }
-
-    // Get booking by ID
     @GetMapping("/{id}")
-    public ResponseEntity<Booking> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(bookingService.getBookingById(id));
+    public ResponseEntity<Booking> getById(@PathVariable Long id,
+                                           @AuthenticationPrincipal OidcUser oidcUser) {
+        AppUser user = getCurrentUser(oidcUser);
+        return ResponseEntity.ok(
+                bookingService.getBookingForViewer(id, user.getEmail(), user.getRole())
+        );
     }
 
-    // Delete booking
+    @PutMapping("/{id}/resource/{resourceId}")
+    public ResponseEntity<Booking> update(@PathVariable Long id,
+                                          @PathVariable Long resourceId,
+                                          @Valid @RequestBody BookingRequest request,
+                                          @AuthenticationPrincipal OidcUser oidcUser) {
+        AppUser user = getCurrentUser(oidcUser);
+        return ResponseEntity.ok(
+                bookingService.updateBooking(id, resourceId, request, user.getEmail(), user.getRole())
+        );
+    }
+
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> delete(@PathVariable Long id) {
-        bookingService.deleteBooking(id);
+    public ResponseEntity<String> delete(@PathVariable Long id,
+                                         @AuthenticationPrincipal OidcUser oidcUser) {
+        AppUser user = getCurrentUser(oidcUser);
+        bookingService.deleteBooking(id, user.getEmail(), user.getRole());
         return ResponseEntity.ok("Booking deleted successfully");
     }
 
-    // Update booking
-    @PutMapping("/{id}")
-    public ResponseEntity<Booking> update(@PathVariable Long id,
-                                          @Valid @RequestBody Booking booking) {
-        return ResponseEntity.ok(bookingService.updateBooking(id, booking));
-    }
-
-    // Approve booking
     @PatchMapping("/{id}/approve")
-    public ResponseEntity<Booking> approve(@PathVariable Long id) {
-        return ResponseEntity.ok(bookingService.approveBooking(id));
+    public ResponseEntity<Booking> approve(@PathVariable Long id,
+                                           @RequestBody(required = false) BookingDecisionRequest request) {
+        return ResponseEntity.ok(bookingService.approveBooking(id, request));
     }
 
-    // Reject booking
     @PatchMapping("/{id}/reject")
     public ResponseEntity<Booking> reject(@PathVariable Long id,
-                                          @RequestParam String remark) {
-        return ResponseEntity.ok(bookingService.rejectBooking(id, remark));
+                                          @Valid @RequestBody BookingDecisionRequest request) {
+        return ResponseEntity.ok(bookingService.rejectBooking(id, request));
     }
 
-    // Cancel booking
     @PatchMapping("/{id}/cancel")
     public ResponseEntity<Booking> cancel(@PathVariable Long id,
-                                          @RequestParam String userId) {
-        return ResponseEntity.ok(bookingService.cancelBooking(id, userId));
+                                          @AuthenticationPrincipal OidcUser oidcUser) {
+        AppUser user = getCurrentUser(oidcUser);
+        return ResponseEntity.ok(
+                bookingService.cancelBooking(id, user.getEmail(), user.getRole())
+        );
     }
 
-    // Filtering endpoints
     @GetMapping("/status/{status}")
     public ResponseEntity<List<Booking>> getByStatus(@PathVariable BookingStatus status) {
         return ResponseEntity.ok(bookingService.getByStatus(status));
@@ -85,8 +118,25 @@ public class BookingController {
 
     @GetMapping("/date/{date}")
     public ResponseEntity<List<Booking>> getByDate(@PathVariable String date) {
-        return ResponseEntity.ok(
-                bookingService.getByDate(java.time.LocalDate.parse(date))
-        );
+        return ResponseEntity.ok(bookingService.getByDate(LocalDate.parse(date)));
+    }
+
+    @GetMapping("/{id}/qr")
+    public ResponseEntity<byte[]> getApprovedBookingQr(@PathVariable Long id,
+                                                       @AuthenticationPrincipal OidcUser oidcUser) {
+        AppUser user = getCurrentUser(oidcUser);
+        Booking booking = bookingService.getBookingForViewer(id, user.getEmail(), user.getRole());
+
+        byte[] qrBytes = bookingQrService.generateApprovedBookingQr(booking);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=booking-" + id + "-qr.png")
+                .contentType(MediaType.IMAGE_PNG)
+                .body(qrBytes);
+    }
+
+    private AppUser getCurrentUser(OidcUser oidcUser) {
+        return appUserRepository.findByEmail(oidcUser.getEmail().toLowerCase())
+                .orElseThrow(() -> new RuntimeException("User not found"));
     }
 }

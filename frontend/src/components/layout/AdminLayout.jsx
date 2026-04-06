@@ -1,4 +1,5 @@
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, Outlet, useLocation, Navigate } from "react-router-dom";
+import { useState } from "react";
 import {
   FiGrid,
   FiLayers,
@@ -11,8 +12,10 @@ import {
   FiUsers,
   FiMessageSquare,
   FiMail,
-  FiInbox,
+  FiLogOut,
+  FiX,
 } from "react-icons/fi";
+import { useAuth } from "../../context/AuthContext";
 
 const navItems = [
   {
@@ -67,8 +70,15 @@ const navItems = [
 
 export default function AdminLayout() {
   const location = useLocation();
+  const { user, logout, loading } = useAuth();
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
-  const hasUnreadNotifications = true;
+  const hasUnreadNotifications = !!user;
+
+  if (!loading && (!user || user.role !== "ADMIN")) {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <div
@@ -176,20 +186,53 @@ export default function AdminLayout() {
 
         {/* Admin Profile */}
         <div className="px-4 py-5 border-t border-white/[0.06] mt-auto">
-          <div className="flex items-center gap-3 px-3 py-3 rounded-xl bg-white/[0.03] border border-white/[0.05] transition-all hover:bg-white/[0.05]">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-              <FiUser size={15} className="text-white" />
+          {loading ? (
+            <div className="flex items-center gap-3 px-3 py-3 rounded-xl bg-white/[0.03] border border-white/[0.05]">
+              <div className="text-sm text-zinc-400">Loading...</div>
             </div>
+          ) : user ? (
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  setImageError(false);
+                  setShowProfileModal(true);
+                }}
+                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl bg-white/[0.03] border border-white/[0.05] transition-all hover:bg-white/[0.06] text-left"
+              >
+                {user.profileImageUrl && !imageError ? (
+                  <img
+                    src={user.profileImageUrl}
+                    alt={user.fullName}
+                    onError={() => setImageError(true)}
+                    className="w-9 h-9 rounded-full border border-orange-400/30 object-cover flex-shrink-0"
+                  />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                    <FiUser size={15} className="text-white" />
+                  </div>
+                )}
 
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-zinc-200 truncate">
-                Admin User
-              </p>
-              <p className="text-[11px] text-zinc-500">Super Admin</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-zinc-200 truncate">
+                    {user.fullName}
+                  </p>
+                  <p className="text-[11px] text-zinc-500 truncate">
+                    {user.email}
+                  </p>
+                </div>
+
+                <div className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" />
+              </button>
+
+              <button
+                onClick={logout}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-400 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:scale-[1.01] hover:shadow-lg"
+              >
+                <FiLogOut size={14} />
+                Logout
+              </button>
             </div>
-
-            <div className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" />
-          </div>
+          ) : null}
         </div>
       </aside>
 
@@ -207,12 +250,10 @@ export default function AdminLayout() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Settings */}
             <button className="w-9 h-9 rounded-xl bg-white/[0.05] border border-white/[0.08] flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/[0.08] transition-all hover:scale-105">
               <FiSettings size={15} />
             </button>
 
-            {/* Notifications */}
             <button className="relative w-9 h-9 rounded-xl bg-white/[0.05] border border-white/[0.08] flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/[0.08] transition-all hover:scale-105">
               <FiBell size={15} />
               {hasUnreadNotifications && (
@@ -223,11 +264,10 @@ export default function AdminLayout() {
               )}
             </button>
 
-            {/* Role badge */}
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-orange-500/20 to-amber-400/10 border border-orange-500/25">
               <div className="w-1.5 h-1.5 bg-orange-400 rounded-full pulse-dot" />
               <span className="text-xs font-bold text-orange-300 tracking-wider">
-                ADMIN
+                {user?.role || "ADMIN"}
               </span>
             </div>
           </div>
@@ -245,6 +285,82 @@ export default function AdminLayout() {
           </div>
         </footer>
       </div>
+
+      {/* Profile Modal */}
+      {showProfileModal && user && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="relative w-full max-w-md rounded-3xl border border-orange-500/20 bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 p-6 shadow-2xl">
+            <button
+              onClick={() => setShowProfileModal(false)}
+              className="absolute right-4 top-4 rounded-lg bg-white/10 p-2 text-zinc-300 transition hover:bg-white/20 hover:text-white"
+            >
+              <FiX size={18} />
+            </button>
+
+            <div className="flex flex-col items-center text-center">
+              {user.profileImageUrl && !imageError ? (
+                <img
+                  src={user.profileImageUrl}
+                  alt={user.fullName}
+                  onError={() => setImageError(true)}
+                  className="h-24 w-24 rounded-full border-4 border-orange-400/40 object-cover shadow-lg"
+                />
+              ) : (
+                <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-amber-400 text-white shadow-lg">
+                  <FiUser size={36} />
+                </div>
+              )}
+
+              <h3 className="mt-4 text-xl font-bold text-white">
+                {user.fullName}
+              </h3>
+
+              <p className="mt-1 text-sm text-zinc-400">{user.email}</p>
+
+              <span className="mt-3 rounded-full bg-orange-500/20 px-4 py-1.5 text-xs font-bold tracking-wide text-orange-300 border border-orange-500/30">
+                {user.role}
+              </span>
+
+              <div className="mt-6 w-full rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left">
+                <p className="text-xs uppercase tracking-wider text-zinc-500">
+                  Profile Details
+                </p>
+
+                <div className="mt-4 space-y-3">
+                  <div>
+                    <p className="text-xs text-zinc-500">Full Name</p>
+                    <p className="text-sm font-medium text-zinc-200">
+                      {user.fullName}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-zinc-500">Email</p>
+                    <p className="text-sm font-medium text-zinc-200 break-all">
+                      {user.email}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-zinc-500">Role</p>
+                    <p className="text-sm font-medium text-zinc-200">
+                      {user.role}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={logout}
+                className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-400 px-4 py-3 text-sm font-semibold text-white shadow-md transition hover:scale-[1.01] hover:shadow-lg"
+              >
+                <FiLogOut size={15} />
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

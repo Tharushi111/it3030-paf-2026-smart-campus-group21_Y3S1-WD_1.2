@@ -12,14 +12,16 @@ export default function RejectBookingModal({ bookingId, onClose, onRejected }) {
       toast.error("Enter a rejection reason");
       return;
     }
+
     setLoading(true);
     try {
       await rejectBooking(bookingId, remark.trim());
       toast.success("Booking rejected");
       onRejected?.();
       onClose();
-    } catch {
-      toast.error("Failed to reject");
+    } catch (error) {
+      console.error(error);
+      toast.error(error?.response?.data?.message || "Failed to reject booking");
     } finally {
       setLoading(false);
     }
@@ -39,10 +41,11 @@ export default function RejectBookingModal({ bookingId, onClose, onRejected }) {
               <FiFlag size={18} />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white">Reject booking</h2>
+              <h2 className="text-lg font-bold text-white">Reject Booking</h2>
               <p className="text-xs text-zinc-500">Stored as admin remark</p>
             </div>
           </div>
+
           <button
             type="button"
             onClick={onClose}
@@ -57,7 +60,7 @@ export default function RejectBookingModal({ bookingId, onClose, onRejected }) {
           <div className="flex gap-3 rounded-xl border border-red-500/20 bg-red-500/10 p-3">
             <FiAlertCircle className="mt-0.5 shrink-0 text-red-400" size={18} />
             <p className="text-sm text-zinc-300">
-              The booking will be marked rejected. You can delete it later if needed.
+              The booking will be marked as rejected and the reason will be visible to the user.
             </p>
           </div>
 
@@ -74,7 +77,9 @@ export default function RejectBookingModal({ bookingId, onClose, onRejected }) {
               className="mt-2 w-full resize-none rounded-xl border border-orange-500/30 bg-white/[0.04] px-4 py-2.5 text-sm text-white placeholder-zinc-500 outline-none focus:border-orange-500"
               placeholder="Why is this booking rejected?"
             />
-            <p className="mt-1 text-right text-xs text-zinc-500">{remark.length}/500</p>
+            <p className="mt-1 text-right text-xs text-zinc-500">
+              {remark.length}/500
+            </p>
           </div>
 
           <div className="flex gap-3">
@@ -93,6 +98,7 @@ export default function RejectBookingModal({ bookingId, onClose, onRejected }) {
                 </>
               )}
             </button>
+
             <button
               type="button"
               onClick={onClose}

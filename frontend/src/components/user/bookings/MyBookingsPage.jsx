@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { FiSearch, FiRefreshCw } from "react-icons/fi";
-import { getBookingsByUserId, cancelBooking } from "../../../services/bookingService";
+import { FiSearch, FiRefreshCw, FiCalendar } from "react-icons/fi";
+import {
+  getMyBookings,
+  cancelBooking,
+  deleteBooking,
+} from "../../../services/bookingService";
 import { getAllResources } from "../../../services/resourceApi";
 import CreateBookingForm from "./CreateBookingForm";
 import UserBookingCard from "./UserBookingCard";
-
-const DEMO_USER_ID = "user1";
 
 export default function MyBookingsPage() {
   const location = useLocation();
@@ -27,16 +29,20 @@ export default function MyBookingsPage() {
   useEffect(() => {
     const rid = location.state?.resourceId;
     if (rid == null) return;
+
     setPrefillResourceId(rid);
+    setEditingBooking(null);
     setModalOpen(true);
+
     navigate(location.pathname, { replace: true, state: {} });
   }, [location.state, location.pathname, navigate]);
 
-  const load = async () => {
+  const load = async (showToast = false) => {
     try {
       setLoading(true);
+
       const [bRes, rRes] = await Promise.all([
-        getBookingsByUserId(DEMO_USER_ID),
+        getMyBookings(),
         getAllResources(),
       ]);
 
@@ -47,8 +53,12 @@ export default function MyBookingsPage() {
         map[r.id] = r;
       });
       setResourceById(map);
-    } catch (e) {
-      console.error(e);
+
+      if (showToast) {
+        toast.success("Bookings refreshed");
+      }
+    } catch (error) {
+      console.error(error);
       toast.error("Failed to load bookings");
     } finally {
       setLoading(false);
@@ -61,12 +71,27 @@ export default function MyBookingsPage() {
 
   const onCancel = async (id) => {
     if (!window.confirm("Cancel this booking?")) return;
+
     try {
-      await cancelBooking(id, DEMO_USER_ID);
+      await cancelBooking(id);
       toast.success("Booking cancelled");
       load();
-    } catch {
-      toast.error("Could not cancel");
+    } catch (error) {
+      console.error(error);
+      toast.error(error?.response?.data?.message || "Could not cancel booking");
+    }
+  };
+
+  const onDelete = async (id) => {
+    if (!window.confirm("Delete this booking?")) return;
+
+    try {
+      await deleteBooking(id);
+      toast.success("Booking deleted");
+      load();
+    } catch (error) {
+      console.error(error);
+      toast.error(error?.response?.data?.message || "Could not delete booking");
     }
   };
 
@@ -78,39 +103,37 @@ export default function MyBookingsPage() {
 
   const filtered = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
+
     return bookings.filter((b) => {
       const res = resourceById[b.resourceId];
 
-      const okStatus = statusFilter === "ALL" || b.status === statusFilter;
+      const matchStatus =
+        statusFilter === "ALL" || b.status === statusFilter;
 
-      const okSearch =
+      const matchSearch =
         !q ||
         (res?.name || "").toLowerCase().includes(q) ||
         (res?.location || "").toLowerCase().includes(q) ||
         (b.purpose || "").toLowerCase().includes(q);
 
-      return okStatus && okSearch;
+      return matchStatus && matchSearch;
     });
-  }, [bookings, searchTerm, statusFilter, resourceById]);
-
-  const canCancel = (s) => s === "PENDING" || s === "APPROVED";
+  }, [bookings, resourceById, searchTerm, statusFilter]);
 
   return (
     <div className="space-y-8">
-
-      {/* HERO */}
       <div className="relative overflow-hidden rounded-3xl border border-orange-200 bg-gradient-to-r from-orange-500 via-amber-400 to-orange-400 p-8 text-white shadow-lg">
-        <div className="relative flex justify-between">
+        <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-4xl font-bold">My bookings</h1>
+            <h1 className="text-4xl font-bold">My Bookings</h1>
             <p className="mt-2 text-orange-50">
               View and manage your campus resource reservations.
             </p>
           </div>
 
           <button
-            onClick={load}
-            className="flex items-center gap-2 rounded-2xl bg-white/20 px-4 py-2 text-sm"
+            onClick={() => load(true)}
+            className="inline-flex items-center gap-2 rounded-2xl bg-white/20 px-4 py-2.5 text-sm font-semibold transition hover:bg-white/30"
           >
             <FiRefreshCw />
             Refresh
@@ -118,32 +141,28 @@ export default function MyBookingsPage() {
         </div>
       </div>
 
-      {/* FILTERS */}
       <div className="rounded-3xl border border-orange-100 bg-white p-6 shadow-md">
         <div className="grid gap-4 sm:grid-cols-2">
-
-          {/* SEARCH */}
           <div>
             <label className="text-sm font-medium text-slate-600">Search</label>
-            <div className="relative">
-              <FiSearch className="absolute left-3 top-3 text-orange-500" />
+            <div className="relative mt-2">
+              <FiSearch className="absolute left-3 top-3.5 text-orange-500" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 p-3 border rounded-xl bg-orange-50 text-slate-700 placeholder:text-slate-400"
+                className="w-full rounded-xl border border-orange-200 bg-orange-50 py-3 pl-10 pr-4 text-slate-700 placeholder:text-slate-400 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
                 placeholder="Search bookings..."
               />
             </div>
           </div>
 
-          {/* STATUS */}
           <div>
             <label className="text-sm font-medium text-slate-600">Status</label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full p-3 border rounded-xl bg-white text-slate-700"
+              className="mt-2 w-full rounded-xl border border-orange-200 bg-white p-3 text-slate-700 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
             >
               <option value="ALL">All</option>
               <option value="PENDING">Pending</option>
@@ -155,11 +174,16 @@ export default function MyBookingsPage() {
         </div>
       </div>
 
-      {/* LIST */}
       {loading ? (
-        <div className="text-center py-10">Loading...</div>
+        <div className="py-12 text-center text-slate-500">Loading...</div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-10">No bookings</div>
+        <div className="rounded-3xl border border-orange-100 bg-white py-16 text-center shadow-md">
+          <FiCalendar className="mx-auto mb-3 text-orange-300" size={34} />
+          <p className="text-lg font-semibold text-slate-700">No bookings found</p>
+          <p className="mt-1 text-sm text-slate-500">
+            Your bookings will appear here after you reserve a resource.
+          </p>
+        </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {filtered.map((b) => (
@@ -169,13 +193,12 @@ export default function MyBookingsPage() {
               resource={resourceById[b.resourceId]}
               onCancel={onCancel}
               onEdit={onEdit}
-              canCancel={canCancel(b.status)}
+              onDelete={onDelete}
             />
           ))}
         </div>
       )}
 
-      {/* MODAL */}
       {modalOpen && (
         <CreateBookingForm
           initialResourceId={prefillResourceId}
@@ -183,6 +206,7 @@ export default function MyBookingsPage() {
           onClose={() => {
             setModalOpen(false);
             setEditingBooking(null);
+            setPrefillResourceId(null);
           }}
           onCreated={load}
         />

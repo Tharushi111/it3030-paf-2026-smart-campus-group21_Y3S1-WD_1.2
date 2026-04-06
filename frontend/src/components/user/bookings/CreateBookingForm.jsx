@@ -1,14 +1,33 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { FiSave, FiX, FiCalendar } from "react-icons/fi";
+import {
+  FiX,
+  FiSave,
+  FiCalendar,
+  FiClock,
+  FiUsers,
+  FiFileText,
+  FiMapPin,
+  FiGrid,
+  FiImage,
+} from "react-icons/fi";
 import { createBooking, updateBooking } from "../../../services/bookingService";
 import { getAllResources } from "../../../services/resourceApi";
 
-const DEMO_USER_ID = "user1";
+function RequiredMark() {
+  return <span className="ml-1 text-red-500">*</span>;
+}
 
-function toLocalTime(value) {
-  if (!value) return value;
-  return value.length === 5 ? `${value}:00` : value;
+function InfoCard({ icon, label, value }) {
+  return (
+    <div className="rounded-2xl border border-orange-100 bg-orange-50/70 p-3">
+      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-orange-500">
+        {icon}
+        {label}
+      </div>
+      <p className="mt-1 text-sm font-medium text-slate-700">{value || "—"}</p>
+    </div>
+  );
 }
 
 export default function CreateBookingForm({
@@ -18,7 +37,8 @@ export default function CreateBookingForm({
   editingBooking = null,
 }) {
   const [resources, setResources] = useState([]);
-  const [loadingList, setLoadingList] = useState(true);
+  const [loadingResources, setLoadingResources] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   const [form, setForm] = useState({
     resourceId: "",
@@ -29,229 +49,470 @@ export default function CreateBookingForm({
     attendeeCount: "1",
   });
 
-  const [submitting, setSubmitting] = useState(false);
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+
+    const loadResources = async () => {
       try {
-        setLoadingList(true);
+        setLoadingResources(true);
         const res = await getAllResources();
-        if (!cancelled) setResources(res.data || []);
-      } catch {
+        if (!cancelled) {
+          setResources(res.data || []);
+        }
+      } catch (error) {
+        console.error(error);
         toast.error("Failed to load resources");
       } finally {
-        setLoadingList(false);
+        if (!cancelled) setLoadingResources(false);
       }
-    })();
-    return () => (cancelled = true);
+    };
+
+    loadResources();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  // Prefill resource if clicked from Resource Card
   useEffect(() => {
-    if (initialResourceId && resources.length) {
+    if (editingBooking) {
+      setForm({
+        resourceId: String(editingBooking.resourceId ?? ""),
+        date: editingBooking.date || "",
+        startTime: editingBooking.startTime?.slice(0, 5) || "",
+        endTime: editingBooking.endTime?.slice(0, 5) || "",
+        purpose: editingBooking.purpose || "",
+        attendeeCount: String(editingBooking.attendeeCount ?? 1),
+      });
+      return;
+    }
+
+    if (initialResourceId != null) {
       setForm((prev) => ({
         ...prev,
         resourceId: String(initialResourceId),
       }));
     }
-  }, [initialResourceId, resources]);
+  }, [editingBooking, initialResourceId]);
 
-  // Prefill form when editing
-  useEffect(() => {
-    if (editingBooking) {
-      setForm({
-        resourceId: String(editingBooking.resourceId),
-        date: editingBooking.date,
-        startTime: editingBooking.startTime?.slice(0, 5),
-        endTime: editingBooking.endTime?.slice(0, 5),
-        purpose: editingBooking.purpose,
-        attendeeCount: String(editingBooking.attendeeCount),
-      });
-    }
-  }, [editingBooking]);
+  const selectedResource = useMemo(() => {
+    return resources.find((r) => String(r.id) === String(form.resourceId)) || null;
+  }, [resources, form.resourceId]);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const imageUrl = selectedResource?.imageUrl
+    ? `http://localhost:9090${selectedResource.imageUrl}`
+    : null;
+
+  const today = new Date().toISOString().split("T")[0];
+
+  const setField = (name, value) => {
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    setErrors((prev) => ({
+      ...prev,
+      [name]: "",
+    }));
   };
 
-  // Validation
   const validate = () => {
-    if (!form.resourceId) return "Please select a resource";
-    if (!form.date) return "Date is required";
+    const nextErrors = {};
 
-    const today = new Date().toISOString().split("T")[0];
-    if (form.date < today) return "Cannot select past date";
+    if (!form.resourceId) {
+      nextErrors.resourceId = "Selected resource not found";
+    }
 
-    if (!form.startTime || !form.endTime) return "Time is required";
-    if (form.endTime <= form.startTime)
-      return "End time must be after start time";
+    if (!form.date) {
+      nextErrors.date = "Date is required";
+    } else if (form.date < today) {
+      nextErrors.date = "Booking date cannot be in the past";
+    }
 
-    if (!form.purpose.trim()) return "Purpose is required";
+    if (!form.startTime) {
+      nextErrors.startTime = "Start time is required";
+    }
 
-    if (Number(form.attendeeCount) < 1) return "Attendees must be at least 1";
+    if (!form.endTime) {
+      nextErrors.endTime = "End time is required";
+    }
 
-    return null;
+    if (form.startTime && form.endTime && form.endTime <= form.startTime) {
+      nextErrors.endTime = "End time must be after start time";
+    }
+
+    if (!form.purpose.trim()) {
+      nextErrors.purpose = "Purpose is required";
+    } else if (form.purpose.trim().length < 5) {
+      nextErrors.purpose = "Purpose should be at least 5 characters";
+    } else if (form.purpose.trim().length > 200) {
+      nextErrors.purpose = "Purpose must not exceed 200 characters";
+    }
+
+    const attendeeCount = Number(form.attendeeCount);
+    if (!form.attendeeCount || Number.isNaN(attendeeCount)) {
+      nextErrors.attendeeCount = "Attendee count is required";
+    } else if (attendeeCount < 1) {
+      nextErrors.attendeeCount = "Attendee count must be at least 1";
+    } else if (
+      selectedResource?.capacity != null &&
+      attendeeCount > Number(selectedResource.capacity)
+    ) {
+      nextErrors.attendeeCount = "Attendee count exceeds resource capacity";
+    }
+
+    if (selectedResource?.status && selectedResource.status !== "ACTIVE") {
+      nextErrors.resourceId = "Only ACTIVE resources can be booked";
+    }
+
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const error = validate();
-    if (error) return toast.error(error);
+    if (!validate()) {
+      toast.error("Please fix the form errors");
+      return;
+    }
+
+    const payload = {
+      date: form.date,
+      startTime: `${form.startTime}:00`,
+      endTime: `${form.endTime}:00`,
+      purpose: form.purpose.trim(),
+      attendeeCount: Number(form.attendeeCount),
+    };
 
     try {
       setSubmitting(true);
 
-      const payload = {
-        resourceId: Number(form.resourceId),
-        userId: DEMO_USER_ID,
-        date: form.date,
-        startTime: toLocalTime(form.startTime),
-        endTime: toLocalTime(form.endTime),
-        purpose: form.purpose.trim(),
-        attendeeCount: Number(form.attendeeCount),
-      };
-
       if (editingBooking) {
-        await updateBooking(editingBooking.id, payload);
-        toast.success("Booking updated");
+        await updateBooking(editingBooking.id, Number(form.resourceId), payload);
+        toast.success("Booking updated successfully");
       } else {
-        await createBooking(payload);
-        toast.success("Booking request submitted");
+        await createBooking(Number(form.resourceId), payload);
+        toast.success("Booking request submitted successfully");
       }
 
       onCreated?.();
       onClose?.();
-    } catch (err) {
-      toast.error(err?.response?.data?.message || "Operation failed");
+    } catch (error) {
+      console.error(error);
+      toast.error(error?.response?.data?.message || "Failed to save booking");
     } finally {
       setSubmitting(false);
     }
   };
 
-  const today = new Date().toISOString().split("T")[0];
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6 backdrop-blur-sm">
-      <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
-        {/* HEADER */}
-        <div className="flex items-center justify-between border-b border-orange-100 bg-gradient-to-r from-orange-500 to-amber-400 px-6 py-4 text-white">
-          <div className="flex items-center gap-3">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/70 px-4 py-6 backdrop-blur-sm">
+      <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-[28px] border border-orange-200 bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-orange-100 bg-gradient-to-r from-orange-500 to-amber-400 px-6 py-5 text-white">
+          <div>
             <h2 className="text-2xl font-bold">
-              {editingBooking ? "Edit booking" : "New booking"}
+              {editingBooking ? "Edit Booking" : "Create Booking"}
             </h2>
-            {editingBooking && (
-              <span className="inline-block rounded bg-yellow-200 px-2 py-1 text-xs font-medium text-black">
-                Editing
-              </span>
-            )}
+            <p className="mt-1 text-sm text-orange-50">
+              Reserve your selected campus resource
+            </p>
           </div>
-          <button onClick={onClose}>
-            <FiX />
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-2xl p-2 transition hover:bg-white/10"
+          >
+            <FiX size={22} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {/* Resource */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Resource
-            </label>
-            <select
-              name="resourceId"
-              value={form.resourceId}
-              onChange={handleChange}
-              className="mt-1 block w-full rounded-md border px-3 py-2 text-black focus:outline-none focus:ring focus:ring-orange-300"
-            >
-              <option value="">Select a resource</option>
-              {resources.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.name} ({r.location})
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className="overflow-y-auto px-6 py-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+              <div className="space-y-5">
+                {/* Selected Resource fixed field */}
+                <div>
+                  <label className="text-sm font-semibold text-slate-700">
+                    Selected Resource
+                    <RequiredMark />
+                  </label>
 
-          {/* Date */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Date</label>
-            <input
-              type="date"
-              name="date"
-              min={today}
-              value={form.date}
-              onChange={handleChange}
-              className="mt-1 block w-full rounded-md border px-3 py-2 text-black focus:outline-none focus:ring focus:ring-orange-300"
-            />
-          </div>
+                  <div
+                    className={`mt-2 rounded-2xl border bg-white px-4 py-3 shadow-sm ${
+                      errors.resourceId
+                        ? "border-red-400 ring-1 ring-red-200"
+                        : "border-orange-200"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <FiGrid className="text-orange-500" size={18} />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-slate-800">
+                          {selectedResource?.name || "No resource selected"}
+                        </p>
+                        <p className="truncate text-xs text-slate-500">
+                          {selectedResource?.location || "Open the booking form from a resource card"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
 
-          {/* Start / End Time */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Start Time
-              </label>
-              <input
-                type="time"
-                name="startTime"
-                value={form.startTime}
-                onChange={handleChange}
-                className="mt-1 block w-full rounded-md border px-3 py-2 text-black focus:outline-none focus:ring focus:ring-orange-300"
-              />
+                  {errors.resourceId && (
+                    <p className="mt-2 text-xs font-medium text-red-500">
+                      {errors.resourceId}
+                    </p>
+                  )}
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="text-sm font-semibold text-slate-700">
+                      Booking Date
+                      <RequiredMark />
+                    </label>
+                    <div
+                      className={`mt-2 flex items-center gap-3 rounded-2xl border bg-white px-4 py-3 shadow-sm transition ${
+                        errors.date
+                          ? "border-red-400 ring-1 ring-red-200"
+                          : "border-orange-200 focus-within:border-orange-400 focus-within:ring-2 focus-within:ring-orange-100"
+                      }`}
+                    >
+                      <FiCalendar className="text-orange-500" size={18} />
+                      <input
+                        type="date"
+                        min={today}
+                        value={form.date}
+                        onChange={(e) => setField("date", e.target.value)}
+                        disabled={submitting}
+                        className="w-full bg-transparent text-sm text-slate-800 outline-none"
+                      />
+                    </div>
+                    {errors.date && (
+                      <p className="mt-2 text-xs font-medium text-red-500">
+                        {errors.date}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-semibold text-slate-700">
+                      Attendee Count
+                      <RequiredMark />
+                    </label>
+                    <div
+                      className={`mt-2 flex items-center gap-3 rounded-2xl border bg-white px-4 py-3 shadow-sm transition ${
+                        errors.attendeeCount
+                          ? "border-red-400 ring-1 ring-red-200"
+                          : "border-orange-200 focus-within:border-orange-400 focus-within:ring-2 focus-within:ring-orange-100"
+                      }`}
+                    >
+                      <FiUsers className="text-orange-500" size={18} />
+                      <input
+                        type="number"
+                        min="1"
+                        value={form.attendeeCount}
+                        onChange={(e) => setField("attendeeCount", e.target.value)}
+                        disabled={submitting}
+                        className="w-full bg-transparent text-sm text-slate-800 outline-none"
+                        placeholder="Enter number of attendees"
+                      />
+                    </div>
+                    {errors.attendeeCount && (
+                      <p className="mt-2 text-xs font-medium text-red-500">
+                        {errors.attendeeCount}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="text-sm font-semibold text-slate-700">
+                      Start Time
+                      <RequiredMark />
+                    </label>
+                    <div
+                      className={`mt-2 flex items-center gap-3 rounded-2xl border bg-white px-4 py-3 shadow-sm transition ${
+                        errors.startTime
+                          ? "border-red-400 ring-1 ring-red-200"
+                          : "border-orange-200 focus-within:border-orange-400 focus-within:ring-2 focus-within:ring-orange-100"
+                      }`}
+                    >
+                      <FiClock className="text-orange-500" size={18} />
+                      <input
+                        type="time"
+                        value={form.startTime}
+                        onChange={(e) => setField("startTime", e.target.value)}
+                        disabled={submitting}
+                        className="w-full bg-transparent text-sm text-slate-800 outline-none"
+                      />
+                    </div>
+                    {errors.startTime && (
+                      <p className="mt-2 text-xs font-medium text-red-500">
+                        {errors.startTime}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-semibold text-slate-700">
+                      End Time
+                      <RequiredMark />
+                    </label>
+                    <div
+                      className={`mt-2 flex items-center gap-3 rounded-2xl border bg-white px-4 py-3 shadow-sm transition ${
+                        errors.endTime
+                          ? "border-red-400 ring-1 ring-red-200"
+                          : "border-orange-200 focus-within:border-orange-400 focus-within:ring-2 focus-within:ring-orange-100"
+                      }`}
+                    >
+                      <FiClock className="text-orange-500" size={18} />
+                      <input
+                        type="time"
+                        value={form.endTime}
+                        onChange={(e) => setField("endTime", e.target.value)}
+                        disabled={submitting}
+                        className="w-full bg-transparent text-sm text-slate-800 outline-none"
+                      />
+                    </div>
+                    {errors.endTime && (
+                      <p className="mt-2 text-xs font-medium text-red-500">
+                        {errors.endTime}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-semibold text-slate-700">
+                    Purpose
+                    <RequiredMark />
+                  </label>
+                  <div
+                    className={`mt-2 flex items-start gap-3 rounded-2xl border bg-white px-4 py-3 shadow-sm transition ${
+                      errors.purpose
+                        ? "border-red-400 ring-1 ring-red-200"
+                        : "border-orange-200 focus-within:border-orange-400 focus-within:ring-2 focus-within:ring-orange-100"
+                    }`}
+                  >
+                    <FiFileText className="mt-0.5 text-orange-500" size={18} />
+                    <textarea
+                      rows={4}
+                      value={form.purpose}
+                      onChange={(e) => setField("purpose", e.target.value)}
+                      disabled={submitting}
+                      placeholder="Example: Team presentation practice, workshop, project discussion..."
+                      className="w-full resize-none bg-transparent text-sm text-slate-800 outline-none"
+                    />
+                  </div>
+                  {errors.purpose && (
+                    <p className="mt-2 text-xs font-medium text-red-500">
+                      {errors.purpose}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="rounded-3xl border border-orange-100 bg-gradient-to-br from-orange-50 to-amber-50 p-5 shadow-sm">
+                  <h3 className="text-lg font-bold text-slate-800">
+                    Selected Resource
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Booking details based on the chosen resource
+                  </p>
+
+                  <div className="mt-4 overflow-hidden rounded-2xl border border-orange-100 bg-white">
+                    <div className="h-40 w-full overflow-hidden bg-orange-50">
+                      {imageUrl ? (
+                        <img
+                          src={imageUrl}
+                          alt={selectedResource?.name || "Selected resource"}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-orange-300">
+                          <FiImage size={30} />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="mt-4 space-y-3">
+                    <InfoCard
+                      icon={<FiGrid size={13} />}
+                      label="Name"
+                      value={selectedResource?.name}
+                    />
+                    <InfoCard
+                      icon={<FiMapPin size={13} />}
+                      label="Location"
+                      value={selectedResource?.location}
+                    />
+                    <InfoCard
+                      icon={<FiUsers size={13} />}
+                      label="Capacity"
+                      value={
+                        selectedResource?.capacity != null
+                          ? String(selectedResource.capacity)
+                          : "Not specified"
+                      }
+                    />
+                    <InfoCard
+                      icon={<FiCalendar size={13} />}
+                      label="Status"
+                      value={selectedResource?.status || "—"}
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-3xl border border-orange-100 bg-white p-5 shadow-sm">
+                  <h3 className="text-sm font-bold uppercase tracking-wide text-orange-500">
+                    Booking Rules
+                  </h3>
+                  <div className="mt-3 space-y-2 text-sm text-slate-600">
+                    <p>• Booking date cannot be in the past.</p>
+                    <p>• End time must be after start time.</p>
+                    <p>• Only active resources can be booked.</p>
+                    <p>• Attendees cannot exceed resource capacity.</p>
+                    <p>• Overlapping slots will be rejected.</p>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                End Time
-              </label>
-              <input
-                type="time"
-                name="endTime"
-                value={form.endTime}
-                onChange={handleChange}
-                className="mt-1 block w-full rounded-md border px-3 py-2 text-black focus:outline-none focus:ring focus:ring-orange-300"
-              />
+
+            <div className="flex justify-end gap-3 border-t border-orange-100 pt-5">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={submitting}
+                className="rounded-2xl border border-orange-200 px-5 py-3 text-sm font-semibold text-slate-600 transition hover:bg-orange-50"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+                disabled={submitting || !selectedResource}
+                className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-400 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition hover:scale-[1.02] disabled:opacity-60 disabled:hover:scale-100"
+              >
+                <FiSave size={16} />
+                {submitting
+                  ? editingBooking
+                    ? "Updating..."
+                    : "Submitting..."
+                  : editingBooking
+                  ? "Update Booking"
+                  : "Submit Booking"}
+              </button>
             </div>
-          </div>
-
-          {/* Purpose */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Purpose</label>
-            <input
-              type="text"
-              name="purpose"
-              value={form.purpose}
-              onChange={handleChange}
-              className="mt-1 block w-full rounded-md border px-3 py-2 text-black focus:outline-none focus:ring focus:ring-orange-300"
-              placeholder="Meeting, study session, etc."
-            />
-          </div>
-
-          {/* Attendee Count */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Attendees</label>
-            <input
-              type="number"
-              name="attendeeCount"
-              value={form.attendeeCount}
-              onChange={handleChange}
-              min={1}
-              className="mt-1 block w-full rounded-md border px-3 py-2 text-black focus:outline-none focus:ring focus:ring-orange-300"
-            />
-          </div>
-
-          {/* Submit */}
-          <div className="flex justify-end gap-2">
-            <button
-              type="submit"
-              disabled={submitting}
-              className="inline-flex items-center gap-2 rounded bg-orange-500 px-4 py-2 text-white hover:bg-orange-600"
-            >
-              <FiSave />
-              {editingBooking ? "Update Booking" : "Submit request"}
-            </button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   );
