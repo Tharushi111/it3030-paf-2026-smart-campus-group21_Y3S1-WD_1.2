@@ -10,10 +10,12 @@ import NotFoundPage from "./components/NotFoundPage.jsx";
 import UserDashboard from "./components/user/UserDashboard.jsx";
 import UserResourcesPage from "./components/user/resources/UserResourcesPage.jsx";
 import MyTicketsPage from "./components/user/tickets/MyTicketsPage.jsx";
+import MyBookingsPage from "./components/user/bookings/MyBookingsPage.jsx";
 
 import AdminDashboard from "./components/admin/AdminDashboard.jsx";
 import ResourceManagementPage from "./components/admin/pages/resources/ResourceManagementPage.jsx";
 import AdminTicketManagementPage from "./components/admin/pages/tickets/AdminTicketManagementPage.jsx";
+import AdminBookingManagementPage from "./components/admin/pages/bookings/AdminBookingManagementPage.jsx";
 
 import StaffLayout from "./components/layout/StaffLayout.jsx";
 import StaffDashboard from "./components/staff/StaffDashboard.jsx";
@@ -129,6 +131,7 @@ export default function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="dashboard" element={<UserDashboard />} />
           <Route path="tickets" element={<MyTicketsPage />} />
+          <Route path="bookings" element={<MyBookingsPage />} />
         </Route>
 
         <Route path="*" element={<NotFoundPage />} />
@@ -140,6 +143,7 @@ export default function App() {
             <Route index element={<AdminDashboard />} />
             <Route path="resources" element={<ResourceManagementPage />} />
             <Route path="tickets" element={<AdminTicketManagementPage />} />
+            <Route path="bookings" element={<AdminBookingManagementPage />} />
           </Route>
         </Route>
       </Route>

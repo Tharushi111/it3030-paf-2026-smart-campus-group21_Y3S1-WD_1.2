@@ -46,16 +46,30 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/resources/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/resources/**").hasRole("ADMIN")
 
-                         // Tickets
-                         .requestMatchers(HttpMethod.POST, "/api/tickets").authenticated()
-                         .requestMatchers(HttpMethod.GET, "/api/tickets/my").authenticated()
-                         .requestMatchers(HttpMethod.GET, "/api/tickets/assigned").hasAnyRole("STAFF", "ADMIN")
-                         .requestMatchers(HttpMethod.GET, "/api/tickets").hasRole("ADMIN")
-                         .requestMatchers(HttpMethod.GET, "/api/tickets/*").authenticated()
-                         .requestMatchers(HttpMethod.PUT, "/api/tickets/*").authenticated()
-                         .requestMatchers(HttpMethod.DELETE, "/api/tickets/*").authenticated()
-                         .requestMatchers(HttpMethod.PATCH, "/api/tickets/*/assign").hasRole("ADMIN")
-                         .requestMatchers(HttpMethod.PATCH, "/api/tickets/*/status").hasAnyRole("STAFF", "ADMIN")
+                        // Tickets
+                        .requestMatchers(HttpMethod.POST, "/api/tickets").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/tickets/my").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/tickets/assigned").hasAnyRole("STAFF", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/tickets").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/tickets/*").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/tickets/*").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/tickets/*").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/api/tickets/*/assign").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/tickets/*/status").hasAnyRole("STAFF", "ADMIN")
+
+                         // Bookings
+                        .requestMatchers(HttpMethod.POST, "/api/bookings/resource/*").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/bookings/my").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/bookings").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/bookings/*").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/bookings/*/qr").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/bookings/*/resource/*").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/bookings/*").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/api/bookings/*/cancel").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/api/bookings/*/approve").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/bookings/*/reject").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/bookings/status/*").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/bookings/date/*").hasRole("ADMIN")
 
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
 

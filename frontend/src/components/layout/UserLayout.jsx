@@ -17,6 +17,7 @@ import {
   FiLogOut,
   FiChevronDown,
   FiRefreshCw,
+  FiBookOpen,
 } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
 
@@ -102,6 +103,11 @@ export default function UserLayout() {
             <Link to="/tickets" className={navLinkClass("/tickets")}>
               <FiTool size={16} />
               Tickets
+            </Link>
+
+            <Link to="/bookings" className={navLinkClass("/bookings")}>
+              <FiBookOpen size={16} />
+              My Bookings
             </Link>
 
             <Link to="/about" className={navLinkClass("/about")}>
@@ -191,6 +197,8 @@ export default function UserLayout() {
                           className={`mt-1 inline-block rounded-full px-2.5 py-1 text-[10px] font-bold ${
                             user.role === "ADMIN"
                               ? "bg-orange-100 text-orange-700"
+                              : user.role === "STAFF"
+                              ? "bg-sky-100 text-sky-700"
                               : "bg-emerald-100 text-emerald-700"
                           }`}
                         >
@@ -235,18 +243,27 @@ export default function UserLayout() {
             <FiHome size={16} />
             Home
           </Link>
+
           <Link to="/resources" className={navLinkClass("/resources")}>
             <FiGrid size={16} />
             Resources
           </Link>
+
           <Link to="/tickets" className={navLinkClass("/tickets")}>
             <FiTool size={16} />
             Tickets
           </Link>
+
+          <Link to="/bookings" className={navLinkClass("/bookings")}>
+            <FiBookOpen size={16} />
+            Bookings
+          </Link>
+
           <Link to="/about" className={navLinkClass("/about")}>
             <FiInfo size={16} />
             About
           </Link>
+
           <Link to="/contact" className={navLinkClass("/contact")}>
             <FiMail size={16} />
             Contact
@@ -289,6 +306,11 @@ export default function UserLayout() {
                 <li>
                   <Link to="/tickets" className="hover:text-orange-400">
                     Tickets
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/bookings" className="hover:text-orange-400">
+                    My Bookings
                   </Link>
                 </li>
                 <li>

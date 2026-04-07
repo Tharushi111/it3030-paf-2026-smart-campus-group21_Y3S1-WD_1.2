@@ -1,16 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
-import { FiClipboard, FiClock, FiCheckCircle, FiAlertTriangle } from "react-icons/fi";
+import { FiClipboard, FiClock, FiCheckCircle, FiAlertTriangle, FiTrendingUp } from "react-icons/fi";
 import toast from "react-hot-toast";
 import { getAssignedTickets } from "../../services/ticketService";
 
-function StatCard({ title, value, icon, color }) {
+function StatCard({ title, value, icon, color, delay }) {
   return (
-    <div className="rounded-2xl border border-orange-500/20 bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 p-5 shadow-lg">
-      <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 text-white">
-        {icon}
+    <div
+      className="group rounded-2xl border border-orange-100 bg-white p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-sm font-medium text-slate-500">{title}</p>
+          <p className={`mt-2 text-3xl font-bold ${color}`}>{value}</p>
+        </div>
+        <div className="rounded-xl bg-gradient-to-br from-orange-500 to-amber-400 p-3 text-white shadow-md transition-all group-hover:scale-105">
+          {icon}
+        </div>
       </div>
-      <p className={`text-3xl font-bold ${color}`}>{value}</p>
-      <p className="mt-1 text-sm font-semibold text-zinc-300">{title}</p>
     </div>
   );
 }
@@ -45,47 +52,108 @@ export default function StaffDashboard() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-slate-800">Staff Dashboard</h1>
-        <p className="mt-1 text-sm text-zinc-500">
-          Monitor your assigned tickets and service response performance.
-        </p>
+      {/* Welcome Banner */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-orange-500 to-amber-400 p-8 text-white shadow-xl">
+        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.15'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")" }} />
+        <div className="relative">
+          <h1 className="text-3xl font-bold">Staff Dashboard</h1>
+          <p className="mt-2 text-orange-100">
+            Monitor your assigned tickets, track SLA performance, and resolve issues efficiently.
+          </p>
+        </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {/* Stats Grid */}
+      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           title="Assigned Tickets"
           value={stats.total}
-          icon={<FiClipboard />}
-          color="text-white"
+          icon={<FiClipboard size={22} />}
+          color="text-orange-600"
+          delay={0}
         />
         <StatCard
           title="In Progress"
           value={stats.inProgress}
-          icon={<FiClock />}
-          color="text-orange-500"
+          icon={<FiClock size={22} />}
+          color="text-blue-600"
+          delay={80}
         />
         <StatCard
           title="Resolved"
           value={stats.resolved}
-          icon={<FiCheckCircle />}
-          color="text-emerald-500"
+          icon={<FiCheckCircle size={22} />}
+          color="text-emerald-600"
+          delay={160}
         />
         <StatCard
           title="SLA Breaches"
           value={stats.breached}
-          icon={<FiAlertTriangle />}
-          color="text-red-500"
+          icon={<FiAlertTriangle size={22} />}
+          color="text-red-600"
+          delay={240}
         />
       </div>
 
-      <div className="rounded-2xl border border-orange-200 bg-white p-6 shadow-sm">
-        <h2 className="text-xl font-bold text-slate-800">Work Summary</h2>
-        <p className="mt-2 text-sm text-zinc-500">
-          You currently have {stats.total} assigned tickets. Keep an eye on
-          service-level timer breaches and resolve tickets promptly.
-        </p>
+      {/* Work Summary Card */}
+      <div className="rounded-3xl border border-orange-100 bg-white p-6 shadow-sm transition-all hover:shadow-md">
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+          <div>
+            <h2 className="text-xl font-bold text-slate-800">Work Summary</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              You currently have <span className="font-semibold text-orange-600">{stats.total}</span> assigned tickets.
+              {stats.breached > 0 && (
+                <span className="ml-1 text-red-500">
+                  ⚠️ {stats.breached} SLA breach{stats.breached > 1 ? "es" : ""} detected.
+                </span>
+              )}
+            </p>
+          </div>
+          <button
+            onClick={() => window.location.href = "/staff/tickets"}
+            className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-orange-600"
+          >
+            <FiTrendingUp size={16} />
+            View All Tickets
+          </button>
+        </div>
+
+        {/* Quick insight bar */}
+        <div className="mt-5 flex flex-wrap gap-4 border-t border-orange-100 pt-5 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="h-2 w-2 rounded-full bg-orange-500"></div>
+            <span className="text-slate-600">In Progress: {stats.inProgress}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="h-2 w-2 rounded-full bg-emerald-500"></div>
+            <span className="text-slate-600">Resolved: {stats.resolved}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="h-2 w-2 rounded-full bg-red-500"></div>
+            <span className="text-slate-600">SLA Breaches: {stats.breached}</span>
+          </div>
+        </div>
       </div>
+
+      {/* Animation keyframes */}
+      <style>{`
+        @keyframes fadeUp {
+          from {
+            opacity: 0;
+            transform: translateY(16px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .fade-in {
+          animation: fadeUp 0.5s ease both;
+        }
+        .grid > div {
+          animation: fadeUp 0.5s ease both;
+        }
+      `}</style>
     </div>
   );
 }
