@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import toast from "react-hot-toast";
+
 import {
   FiPlus,
   FiTag,
-  FiRefreshCw,
   FiEye,
   FiEdit2,
   FiTrash2,
 } from "react-icons/fi";
+
 import { getMyTickets, deleteTicket } from "../../../services/ticketService";
 import CreateTicketForm from "./CreateTicketForm";
 import TicketDetailsModal from "./TicketDetailsModal";
@@ -53,22 +54,36 @@ export default function MyTicketsPage() {
   const [editingTicket, setEditingTicket] = useState(null);
   const [filter, setFilter] = useState("ALL");
 
-  const fetchTickets = async () => {
+  const fetchTickets = useCallback(async (showLoader = false) => {
     try {
-      setLoading(true);
+      if (showLoader) {
+        setLoading(true);
+      }
+
       const response = await getMyTickets();
       setTickets(response.data || []);
     } catch (error) {
       console.error(error);
-      toast.error("Failed to load tickets");
+
+      if (showLoader) {
+        toast.error("Failed to load tickets");
+      }
     } finally {
-      setLoading(false);
+      if (showLoader) {
+        setLoading(false);
+      }
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchTickets();
-  }, []);
+    fetchTickets(true);
+
+    const interval = setInterval(() => {
+      fetchTickets(false);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [fetchTickets]);
 
   const handleDelete = async (id) => {
     const confirmed = window.confirm("Delete this ticket?");
@@ -77,7 +92,7 @@ export default function MyTicketsPage() {
     try {
       await deleteTicket(id);
       toast.success("Ticket deleted successfully.");
-      fetchTickets();
+      fetchTickets(false);
     } catch (error) {
       console.error(error);
       toast.error(error?.response?.data?.message || "Error deleting ticket.");
@@ -112,14 +127,6 @@ export default function MyTicketsPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <button
-            onClick={fetchTickets}
-            className="flex h-11 w-11 items-center justify-center rounded-2xl border border-orange-200 bg-white text-slate-600 shadow-sm transition hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600"
-            title="Refresh"
-          >
-            <FiRefreshCw className={loading ? "animate-spin" : ""} />
-          </button>
-
           <button
             onClick={() => setShowCreateModal(true)}
             className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-400 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition-all hover:scale-[1.02] hover:shadow-orange-500/30"
@@ -262,7 +269,7 @@ export default function MyTicketsPage() {
       {showCreateModal && (
         <CreateTicketForm
           onClose={() => setShowCreateModal(false)}
-          onCreated={fetchTickets}
+          onCreated={() => fetchTickets(false)}
         />
       )}
 
@@ -277,7 +284,7 @@ export default function MyTicketsPage() {
         <EditTicketModal
           ticket={editingTicket}
           onClose={() => setEditingTicket(null)}
-          onUpdated={fetchTickets}
+          onUpdated={() => fetchTickets(false)}
         />
       )}
     </div>

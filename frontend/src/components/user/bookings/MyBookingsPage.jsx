@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { FiSearch, FiRefreshCw, FiCalendar } from "react-icons/fi";
+import { FiSearch, FiCalendar } from "react-icons/fi";
+
 import {
   getMyBookings,
   cancelBooking,
   deleteBooking,
 } from "../../../services/bookingService";
+
 import { getAllResources } from "../../../services/resourceApi";
+
 import CreateBookingForm from "./CreateBookingForm";
 import UserBookingCard from "./UserBookingCard";
 
@@ -37,10 +40,8 @@ export default function MyBookingsPage() {
     navigate(location.pathname, { replace: true, state: {} });
   }, [location.state, location.pathname, navigate]);
 
-  const load = async (showToast = false) => {
+  const load = async () => {
     try {
-      setLoading(true);
-
       const [bRes, rRes] = await Promise.all([
         getMyBookings(),
         getAllResources(),
@@ -52,11 +53,8 @@ export default function MyBookingsPage() {
       (rRes.data || []).forEach((r) => {
         map[r.id] = r;
       });
-      setResourceById(map);
 
-      if (showToast) {
-        toast.success("Bookings refreshed");
-      }
+      setResourceById(map);
     } catch (error) {
       console.error(error);
       toast.error("Failed to load bookings");
@@ -67,6 +65,12 @@ export default function MyBookingsPage() {
 
   useEffect(() => {
     load();
+
+    const interval = setInterval(() => {
+      load();
+    }, 5000); // auto refresh every 5 seconds
+
+    return () => clearInterval(interval);
   }, []);
 
   const onCancel = async (id) => {
@@ -122,8 +126,11 @@ export default function MyBookingsPage() {
 
   return (
     <div className="space-y-8">
+
+      {/* Hero Banner */}
       <div className="relative overflow-hidden rounded-3xl border border-orange-200 bg-gradient-to-r from-orange-500 via-amber-400 to-orange-400 p-8 text-white shadow-lg">
         <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+
           <div>
             <h1 className="text-4xl font-bold">My Bookings</h1>
             <p className="mt-2 text-orange-50">
@@ -131,22 +138,18 @@ export default function MyBookingsPage() {
             </p>
           </div>
 
-          <button
-            onClick={() => load(true)}
-            className="inline-flex items-center gap-2 rounded-2xl bg-white/20 px-4 py-2.5 text-sm font-semibold transition hover:bg-white/30"
-          >
-            <FiRefreshCw />
-            Refresh
-          </button>
         </div>
       </div>
 
+      {/* Filters */}
       <div className="rounded-3xl border border-orange-100 bg-white p-6 shadow-md">
         <div className="grid gap-4 sm:grid-cols-2">
+
           <div>
             <label className="text-sm font-medium text-slate-600">Search</label>
             <div className="relative mt-2">
               <FiSearch className="absolute left-3 top-3.5 text-orange-500" />
+
               <input
                 type="text"
                 value={searchTerm}
@@ -159,6 +162,7 @@ export default function MyBookingsPage() {
 
           <div>
             <label className="text-sm font-medium text-slate-600">Status</label>
+
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -171,18 +175,28 @@ export default function MyBookingsPage() {
               <option value="CANCELLED">Cancelled</option>
             </select>
           </div>
+
         </div>
       </div>
 
+      {/* Booking List */}
       {loading ? (
-        <div className="py-12 text-center text-slate-500">Loading...</div>
+        <div className="py-12 text-center text-slate-500">
+          Loading...
+        </div>
       ) : filtered.length === 0 ? (
         <div className="rounded-3xl border border-orange-100 bg-white py-16 text-center shadow-md">
+
           <FiCalendar className="mx-auto mb-3 text-orange-300" size={34} />
-          <p className="text-lg font-semibold text-slate-700">No bookings found</p>
+
+          <p className="text-lg font-semibold text-slate-700">
+            No bookings found
+          </p>
+
           <p className="mt-1 text-sm text-slate-500">
             Your bookings will appear here after you reserve a resource.
           </p>
+
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
@@ -199,6 +213,7 @@ export default function MyBookingsPage() {
         </div>
       )}
 
+      {/* Booking Form Modal */}
       {modalOpen && (
         <CreateBookingForm
           initialResourceId={prefillResourceId}

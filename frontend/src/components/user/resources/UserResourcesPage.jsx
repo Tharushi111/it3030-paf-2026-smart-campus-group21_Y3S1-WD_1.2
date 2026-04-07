@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import toast from "react-hot-toast";
 
 import { getAllResources } from "../../../services/resourceApi";
@@ -15,24 +15,36 @@ export default function UserResourcesPage() {
   const [typeFilter, setTypeFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
 
-  const fetchResources = async () => {
+  const fetchResources = useCallback(async (showLoader = false) => {
     try {
-      setLoading(true);
+      if (showLoader) {
+        setLoading(true);
+      }
 
       const response = await getAllResources();
-
       setResources(response.data || []);
     } catch (error) {
       console.error(error);
-      toast.error("Failed to load resources");
+
+      if (showLoader) {
+        toast.error("Failed to load resources");
+      }
     } finally {
-      setLoading(false);
+      if (showLoader) {
+        setLoading(false);
+      }
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchResources();
-  }, []);
+    fetchResources(true);
+
+    const interval = setInterval(() => {
+      fetchResources(false);
+    }, 5000); // refresh every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [fetchResources]);
 
   const filteredResources = useMemo(() => {
     return resources.filter((resource) => {
@@ -71,7 +83,7 @@ export default function UserResourcesPage() {
         </div>
       </div>
 
-      {/* <UserResourceStats resources={resources} />*/}
+      {/* <UserResourceStats resources={resources} /> */}
 
       <UserResourceFilters
         searchTerm={searchTerm}
