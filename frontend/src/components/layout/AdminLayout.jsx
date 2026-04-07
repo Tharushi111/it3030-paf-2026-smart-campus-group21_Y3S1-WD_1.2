@@ -4,18 +4,17 @@ import {
   FiGrid,
   FiLayers,
   FiSettings,
-  FiBell,
   FiUser,
   FiZap,
   FiCalendar,
   FiTool,
   FiUsers,
   FiMessageSquare,
-  FiMail,
   FiLogOut,
   FiX,
 } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
+import NotificationBell from "../common/NotificationBell";
 
 const navItems = [
   {
@@ -43,12 +42,6 @@ const navItems = [
     color: "from-violet-500 to-purple-400",
   },
   {
-    to: "/admin/inquiries",
-    label: "Contact Inquiries",
-    icon: <FiMail />,
-    color: "from-sky-500 to-cyan-400",
-  },
-  {
     to: "/admin/notifications",
     label: "Notifications",
     icon: <FiMessageSquare />,
@@ -73,8 +66,6 @@ export default function AdminLayout() {
   const { user, logout, loading } = useAuth();
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [imageError, setImageError] = useState(false);
-
-  const hasUnreadNotifications = !!user;
 
   if (!loading && (!user || user.role !== "ADMIN")) {
     return <Navigate to="/" replace />;
@@ -121,9 +112,7 @@ export default function AdminLayout() {
         }
       `}</style>
 
-      {/* Sidebar */}
       <aside className="w-[285px] min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 border-r border-white/[0.06] sidebar-glow flex flex-col flex-shrink-0">
-        {/* Brand */}
         <div className="px-6 py-7 border-b border-white/[0.06]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-400 flex items-center justify-center shadow-lg shadow-orange-500/30 transition-transform hover:scale-105">
@@ -144,7 +133,6 @@ export default function AdminLayout() {
           </div>
         </div>
 
-        {/* Navigation */}
         <div className="mx-4 my-4 rounded-2xl border border-orange-500/20 bg-white/[0.02] overflow-hidden">
           <nav className="flex-1 px-2 py-3 space-y-1">
             <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-orange-400/70 px-3 mb-3">
@@ -184,7 +172,6 @@ export default function AdminLayout() {
           </nav>
         </div>
 
-        {/* Admin Profile */}
         <div className="px-4 py-5 border-t border-white/[0.06] mt-auto">
           {loading ? (
             <div className="flex items-center gap-3 px-3 py-3 rounded-xl bg-white/[0.03] border border-white/[0.05]">
@@ -236,9 +223,7 @@ export default function AdminLayout() {
         </div>
       </aside>
 
-      {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
         <header className="h-16 bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950/80 backdrop-blur border-b border-orange-500/20 px-8 flex items-center justify-between flex-shrink-0 sticky top-0 z-30">
           <div>
             <h2 className="text-base font-semibold text-zinc-200">
@@ -254,15 +239,12 @@ export default function AdminLayout() {
               <FiSettings size={15} />
             </button>
 
-            <button className="relative w-9 h-9 rounded-xl bg-white/[0.05] border border-white/[0.08] flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/[0.08] transition-all hover:scale-105">
-              <FiBell size={15} />
-              {hasUnreadNotifications && (
-                <>
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-ping opacity-60" />
-                </>
-              )}
-            </button>
+            {user && (
+              <NotificationBell
+                user={user}
+                preferencesPath="/admin/notifications"
+              />
+            )}
 
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-orange-500/20 to-amber-400/10 border border-orange-500/25">
               <div className="w-1.5 h-1.5 bg-orange-400 rounded-full pulse-dot" />
@@ -273,12 +255,10 @@ export default function AdminLayout() {
           </div>
         </header>
 
-        {/* Page content */}
         <main className="flex-1 px-8 py-8 overflow-auto">
           <Outlet />
         </main>
 
-        {/* Footer */}
         <footer className="border-t border-orange-500/20 bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950/60 backdrop-blur px-8 py-4 text-center text-xs text-zinc-500">
           <div className="flex items-center justify-center gap-2">
             <span>© 2026 CampusNexus. All rights reserved.</span>
@@ -286,7 +266,6 @@ export default function AdminLayout() {
         </footer>
       </div>
 
-      {/* Profile Modal */}
       {showProfileModal && user && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
           <div className="relative w-full max-w-md rounded-3xl border border-orange-500/20 bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 p-6 shadow-2xl">
@@ -350,9 +329,17 @@ export default function AdminLayout() {
                 </div>
               </div>
 
+              <Link
+                to="/admin/notifications"
+                className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl border border-orange-500/30 bg-orange-500/10 px-4 py-3 text-sm font-semibold text-orange-300 transition hover:bg-orange-500/20"
+              >
+                <FiMessageSquare size={15} />
+                Notification Preferences
+              </Link>
+
               <button
                 onClick={logout}
-                className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-400 px-4 py-3 text-sm font-semibold text-white shadow-md transition hover:scale-[1.01] hover:shadow-lg"
+                className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-400 px-4 py-3 text-sm font-semibold text-white shadow-md transition hover:scale-[1.01] hover:shadow-lg"
               >
                 <FiLogOut size={15} />
                 Logout

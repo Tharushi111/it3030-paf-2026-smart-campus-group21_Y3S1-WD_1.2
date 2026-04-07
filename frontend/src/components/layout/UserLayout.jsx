@@ -11,15 +11,16 @@ import {
   FiPhone,
   FiMapPin,
   FiInfo,
-  FiBell,
   FiUser,
   FiTool,
   FiLogOut,
   FiChevronDown,
   FiRefreshCw,
   FiBookOpen,
+  FiBell,
 } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
+import NotificationBell from "../common/NotificationBell";
 
 export default function UserLayout() {
   const location = useLocation();
@@ -29,9 +30,6 @@ export default function UserLayout() {
   const [imageError, setImageError] = useState(false);
 
   const profileMenuRef = useRef(null);
-
-  const hasUnreadNotifications = !!user;
-  const unreadCount = user ? 3 : 0;
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -67,10 +65,8 @@ export default function UserLayout() {
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@700;800&display=swap');
       `}</style>
 
-      {/* HEADER */}
       <header className="sticky top-0 z-50 border-b border-orange-500/20 bg-gradient-to-r from-slate-950 via-blue-950 to-indigo-950 px-6 py-4 shadow-lg backdrop-blur-sm">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4">
-          {/* Logo */}
           <div className="flex items-center gap-3">
             <img
               src="/Logo.png"
@@ -88,7 +84,6 @@ export default function UserLayout() {
             </div>
           </div>
 
-          {/* Desktop Navigation */}
           <nav className="hidden items-center gap-1 lg:flex">
             <Link to="/" className={navLinkClass("/")}>
               <FiHome size={16} />
@@ -121,26 +116,14 @@ export default function UserLayout() {
             </Link>
           </nav>
 
-          {/* Right Side */}
           <div className="flex items-center gap-3">
-            {/* Notification */}
-            <button
-              type="button"
-              className="relative rounded-xl border border-white/10 bg-white/5 p-2.5 text-zinc-300 transition-all duration-200 hover:border-orange-400/30 hover:bg-white/10 hover:text-orange-300 hover:scale-105"
-              title="Notifications"
-            >
-              <FiBell size={18} />
-              {hasUnreadNotifications && (
-                <>
-                  <span className="absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white shadow-lg ring-2 ring-slate-900">
-                    {unreadCount}
-                  </span>
-                  <span className="absolute right-0 top-0 h-2.5 w-2.5 animate-ping rounded-full bg-red-400 ring-2 ring-slate-900" />
-                </>
-              )}
-            </button>
+            {user && (
+              <NotificationBell
+                user={user}
+                preferencesPath="/notifications/preferences"
+              />
+            )}
 
-            {/* Auth Section */}
             {loading ? (
               <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-zinc-300">
                 Loading...
@@ -207,9 +190,17 @@ export default function UserLayout() {
                       </div>
                     </div>
 
+                    <Link
+                      to="/notifications/preferences"
+                      className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-4 py-2.5 text-sm font-semibold text-orange-700 transition hover:bg-orange-100"
+                    >
+                      <FiBell size={14} />
+                      Notification Preferences
+                    </Link>
+
                     <button
                       onClick={switchAccount}
-                      className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-4 py-2.5 text-sm font-semibold text-orange-700 transition hover:bg-orange-100"
+                      className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-4 py-2.5 text-sm font-semibold text-orange-700 transition hover:bg-orange-100"
                     >
                       <FiRefreshCw size={14} />
                       Switch Account
@@ -237,7 +228,6 @@ export default function UserLayout() {
           </div>
         </div>
 
-        {/* Mobile Navigation */}
         <div className="mx-auto mt-4 flex max-w-7xl flex-wrap items-center gap-2 border-t border-white/10 pt-4 lg:hidden">
           <Link to="/" className={navLinkClass("/")}>
             <FiHome size={16} />
@@ -271,14 +261,12 @@ export default function UserLayout() {
         </div>
       </header>
 
-      {/* MAIN */}
       <main className="flex-1 bg-gradient-to-br from-orange-50 via-white to-orange-100 px-6 py-10">
         <div className="mx-auto max-w-7xl">
           <Outlet />
         </div>
       </main>
 
-      {/* FOOTER */}
       <footer className="border-t border-orange-500/20 bg-gradient-to-r from-slate-950 via-blue-950 to-indigo-950 px-6 py-8 text-white">
         <div className="mx-auto max-w-7xl">
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
@@ -314,13 +302,11 @@ export default function UserLayout() {
                   </Link>
                 </li>
                 <li>
-                  <Link to="/about" className="hover:text-orange-400">
-                    About Us
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/contact" className="hover:text-orange-400">
-                    Contact Us
+                  <Link
+                    to="/notifications/preferences"
+                    className="hover:text-orange-400"
+                  >
+                    Notification Preferences
                   </Link>
                 </li>
               </ul>

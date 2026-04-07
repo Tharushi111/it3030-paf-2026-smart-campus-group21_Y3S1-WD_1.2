@@ -1,6 +1,7 @@
-import { Outlet, NavLink } from "react-router-dom";
-import { FiClipboard, FiHome, FiLogOut } from "react-icons/fi";
+import { Outlet, NavLink, Link } from "react-router-dom";
+import { FiClipboard, FiHome, FiLogOut, FiBell } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
+import NotificationBell from "../common/NotificationBell";
 
 export default function StaffLayout() {
   const { user, logout } = useAuth();
@@ -14,26 +15,35 @@ export default function StaffLayout() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-orange-50 via-white to-orange-100">
-      {/* Header – dark gradient to match admin/user layout */}
       <header className="sticky top-0 z-50 border-b border-orange-500/20 bg-gradient-to-r from-slate-950 via-blue-950 to-indigo-950 text-white shadow-lg">
         <div className="mx-auto max-w-7xl px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              {/* Logo image instead of icon */}
               <img
                 src="/Logo.png"
                 alt="CampusNexus Logo"
                 className="h-10 w-10 rounded-xl object-cover shadow-md"
               />
               <div>
-                <h1 className="text-base font-semibold text-zinc-200">CampusNexus Staff</h1>
+                <h1 className="text-base font-semibold text-zinc-200">
+                  CampusNexus Staff
+                </h1>
                 <p className="text-xs text-zinc-500">Staff Operations Portal</p>
               </div>
             </div>
 
             <div className="flex items-center gap-4">
+              {user && (
+                <NotificationBell
+                  user={user}
+                  preferencesPath="/staff/notifications/preferences"
+                />
+              )}
+
               <div className="hidden text-right md:block">
-                <p className="text-sm font-semibold text-white">{user?.fullName}</p>
+                <p className="text-sm font-semibold text-white">
+                  {user?.fullName}
+                </p>
                 <p className="text-xs text-orange-300">{user?.role}</p>
               </div>
 
@@ -51,7 +61,6 @@ export default function StaffLayout() {
             </div>
           </div>
 
-          {/* Navigation */}
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <NavLink to="/staff" end className={navClass}>
               <FiHome size={16} />
@@ -62,6 +71,14 @@ export default function StaffLayout() {
               <FiClipboard size={16} />
               Assigned Tickets
             </NavLink>
+
+            <Link
+              to="/staff/notifications/preferences"
+              className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-zinc-400 transition-all duration-200 hover:text-orange-300 hover:bg-white/5"
+            >
+              <FiBell size={16} />
+              Notification Settings
+            </Link>
 
             <button
               onClick={logout}
@@ -74,12 +91,10 @@ export default function StaffLayout() {
         </div>
       </header>
 
-      {/* Main Content – light background */}
       <main className="flex-1 mx-auto w-full max-w-7xl px-6 py-8">
         <Outlet />
       </main>
 
-      {/* Footer – light with orange border */}
       <footer className="border-t border-orange-200 bg-white/50 py-6">
         <div className="mx-auto max-w-7xl px-6 text-center text-sm text-zinc-500">
           <div className="flex flex-col items-center justify-center gap-2 md:flex-row md:justify-between">
