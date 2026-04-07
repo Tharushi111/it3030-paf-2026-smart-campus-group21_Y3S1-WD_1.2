@@ -60,6 +60,7 @@ export default function AdminTicketManagementPage() {
       setTickets(response.data || []);
 
       if (showToast) {
+        toast.success("Tickets refreshed");
       }
     } catch (error) {
       console.error(error);
@@ -191,17 +192,20 @@ export default function AdminTicketManagementPage() {
           </p>
         </div>
 
-        <button
-          onClick={() => fetchTickets(true)}
-          disabled={refreshing || loading}
-          className="inline-flex items-center justify-center gap-2 rounded-xl border border-orange-500/30 bg-gradient-to-r from-orange-500/15 to-amber-400/15 px-5 py-3 text-sm font-semibold text-orange-300 shadow-lg shadow-orange-500/10 transition-all hover:scale-[1.02] hover:bg-orange-500/20 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100"
-        >
-          <FiRefreshCw
-            size={16}
-            className={refreshing ? "animate-spin" : ""}
-          />
-          {refreshing ? "Refreshing..." : "Refresh"}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => fetchTickets(true)}
+            disabled={refreshing || loading}
+            className="inline-flex items-center gap-2 rounded-xl border border-orange-500/30 bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 px-4 py-3 text-sm font-semibold text-orange-300 shadow-lg transition-all hover:border-orange-400 hover:bg-orange-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <FiRefreshCw
+              size={16}
+              className={refreshing ? "animate-spin" : ""}
+            />
+            {refreshing ? "Refreshing..." : "Refresh"}
+          </button>
+        </div>
       </section>
 
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">

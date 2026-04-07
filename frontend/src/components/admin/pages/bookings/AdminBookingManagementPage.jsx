@@ -12,6 +12,7 @@ import {
   FiAlertCircle,
   FiUsers,
   FiEye,
+  FiRefreshCw,
 } from "react-icons/fi";
 import {
   getAllBookings,
@@ -56,7 +57,7 @@ export default function AdminBookingManagementPage() {
   const [rejectingId, setRejectingId] = useState(null);
   const [selectedResource, setSelectedResource] = useState(null);
 
-  const fetchData = async () => {
+  const fetchData = async (showToast = false) => {
     try {
       setLoading(true);
 
@@ -72,6 +73,9 @@ export default function AdminBookingManagementPage() {
         map[r.id] = r;
       });
       setResourceById(map);
+
+      if (showToast) {
+      }
     } catch (error) {
       console.error(error);
       toast.error("Failed to load bookings");
@@ -219,6 +223,16 @@ export default function AdminBookingManagementPage() {
             Approve, reject, and manage campus resource reservations.
           </p>
         </div>
+
+        <button
+          type="button"
+          onClick={() => fetchData(true)}
+          disabled={loading}
+          className="inline-flex items-center gap-2 rounded-xl border border-orange-500/30 bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 px-4 py-3 text-sm font-semibold text-orange-300 shadow-lg transition-all hover:border-orange-400 hover:bg-orange-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <FiRefreshCw className={loading ? "animate-spin" : ""} size={16} />
+          Refresh
+        </button>
       </section>
 
       <section className="fade-in grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
