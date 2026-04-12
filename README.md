@@ -1,6 +1,6 @@
 # CampusNexus – Smart Campus Operations Hub
 
-CampusNexus is a modern smart campus management platform developed to improve how university resources, bookings, maintenance requests, and notifications are handled in one centralized system.
+**CampusNexus** is a modern smart campus management platform developed to improve how university resources, bookings, maintenance requests, and notifications are handled in one centralized system.
 
 This project was developed for the **Programming Applications and Frameworks (IT3030)** module.
 
@@ -8,7 +8,7 @@ This project was developed for the **Programming Applications and Frameworks (IT
 
 ## Project Overview
 
-CampusNexus is a full-stack web application that helps universities manage day-to-day campus operations more efficiently.
+**CampusNexus** is a full-stack web application that helps universities manage day-to-day campus operations more efficiently.
 
 The system allows users to:
 
