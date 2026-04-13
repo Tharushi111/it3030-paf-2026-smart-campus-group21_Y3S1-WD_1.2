@@ -49,34 +49,33 @@ public class CustomOidcUserService extends OidcUserService {
         Set<String> adminEmails = parseEmails(adminEmailsProperty);
         Set<String> staffEmails = parseEmails(staffEmailsProperty);
 
-        Role assignedRole;
-        if (adminEmails.contains(normalizedEmail)) {
-            assignedRole = Role.ADMIN;
-        } else if (staffEmails.contains(normalizedEmail)) {
-            assignedRole = Role.STAFF;
-        } else {
-            assignedRole = Role.USER;
-        }
-
-        AppUser user = userRepository.findByEmail(normalizedEmail)
+        AppUser savedUser = userRepository.findByEmail(normalizedEmail)
                 .map(existing -> {
                     existing.setFullName(name != null && !name.isBlank() ? name : existing.getFullName());
                     existing.setProfileImageUrl(picture);
-                    existing.setRole(assignedRole);
-                    existing.setProvider(AuthProvider.GOOGLE);
-                    existing.setActive(true);
-                    return existing;
+                    return userRepository.save(existing);
                 })
-                .orElseGet(() -> AppUser.builder()
-                        .fullName(name != null && !name.isBlank() ? name : "Google User")
-                        .email(normalizedEmail)
-                        .profileImageUrl(picture)
-                        .role(assignedRole)
-                        .provider(AuthProvider.GOOGLE)
-                        .active(true)
-                        .build());
+                .orElseGet(() -> {
+                    Role assignedRole;
+                    if (adminEmails.contains(normalizedEmail)) {
+                        assignedRole = Role.ADMIN;
+                    } else if (staffEmails.contains(normalizedEmail)) {
+                        assignedRole = Role.STAFF;
+                    } else {
+                        assignedRole = Role.USER;
+                    }
 
-        AppUser savedUser = userRepository.save(user);
+                    AppUser user = AppUser.builder()
+                            .fullName(name != null && !name.isBlank() ? name : "Google User")
+                            .email(normalizedEmail)
+                            .profileImageUrl(picture)
+                            .role(assignedRole)
+                            .provider(AuthProvider.GOOGLE)
+                            .active(true)
+                            .build();
+
+                    return userRepository.save(user);
+                });
 
         Set<GrantedAuthority> mappedAuthorities = new HashSet<>(oidcUser.getAuthorities());
         mappedAuthorities.add(new SimpleGrantedAuthority("ROLE_" + savedUser.getRole().name()));

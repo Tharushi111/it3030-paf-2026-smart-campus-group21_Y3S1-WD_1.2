@@ -1,5 +1,6 @@
 package com.campusnexus.backend.dto;
 
+import com.campusnexus.backend.model.AuthProvider;
 import com.campusnexus.backend.model.Role;
 import lombok.Builder;
 import lombok.Getter;
@@ -12,4 +13,6 @@ public class UserResponse {
     private String email;
     private String profileImageUrl;
     private Role role;
+    private AuthProvider provider;
+    private boolean active;
 }

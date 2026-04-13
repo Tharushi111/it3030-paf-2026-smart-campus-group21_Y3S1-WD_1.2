@@ -61,6 +61,8 @@ public class AuthController {
             return ResponseEntity.status(401).body(Map.of("message", "Email not found"));
         }
 
+        String normalizedEmail = email.trim().toLowerCase();
+
         Set<String> adminEmails = Arrays.stream(adminEmailsProperty.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isBlank())
@@ -73,34 +75,35 @@ public class AuthController {
                 .map(String::toLowerCase)
                 .collect(Collectors.toSet());
 
-        Role assignedRole;
-        if (adminEmails.contains(email.toLowerCase())) {
-            assignedRole = Role.ADMIN;
-        } else if (staffEmails.contains(email.toLowerCase())) {
-            assignedRole = Role.STAFF;
-        } else {
-            assignedRole = Role.USER;
-        }
-
-        AppUser user = userRepository.findByEmail(email)
+        AppUser savedUser = userRepository.findByEmail(normalizedEmail)
                 .map(existing -> {
-                    existing.setFullName(name != null ? name : existing.getFullName());
+                    existing.setFullName(name != null && !name.isBlank() ? name : existing.getFullName());
                     existing.setProfileImageUrl(picture);
-                    existing.setRole(assignedRole);
-                    existing.setProvider(AuthProvider.GOOGLE);
-                    existing.setActive(true);
-                    return existing;
-                })
-                .orElseGet(() -> AppUser.builder()
-                        .fullName(name != null ? name : "Google User")
-                        .email(email)
-                        .profileImageUrl(picture)
-                        .role(assignedRole)
-                        .provider(AuthProvider.GOOGLE)
-                        .active(true)
-                        .build());
 
-        AppUser savedUser = userRepository.save(user);
+                    // preserve existing role/active/provider if user already exists
+                    return userRepository.save(existing);
+                })
+                .orElseGet(() -> {
+                    Role assignedRole;
+                    if (adminEmails.contains(normalizedEmail)) {
+                        assignedRole = Role.ADMIN;
+                    } else if (staffEmails.contains(normalizedEmail)) {
+                        assignedRole = Role.STAFF;
+                    } else {
+                        assignedRole = Role.USER;
+                    }
+
+                    AppUser newUser = AppUser.builder()
+                            .fullName(name != null && !name.isBlank() ? name : "Google User")
+                            .email(normalizedEmail)
+                            .profileImageUrl(picture)
+                            .role(assignedRole)
+                            .provider(AuthProvider.GOOGLE)
+                            .active(true)
+                            .build();
+
+                    return userRepository.save(newUser);
+                });
 
         return ResponseEntity.ok(
                 UserResponse.builder()
@@ -109,6 +112,8 @@ public class AuthController {
                         .email(savedUser.getEmail())
                         .profileImageUrl(savedUser.getProfileImageUrl())
                         .role(savedUser.getRole())
+                        .provider(savedUser.getProvider())
+                        .active(savedUser.isActive())
                         .build()
         );
     }
