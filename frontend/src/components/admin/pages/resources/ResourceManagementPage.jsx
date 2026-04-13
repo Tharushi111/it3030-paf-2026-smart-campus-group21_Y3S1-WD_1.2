@@ -282,10 +282,13 @@ export default function ResourceManagementPage() {
       setResources(response.data || []);
 
       if (showToast) {
+        toast.success("Resources refreshed");
       }
     } catch (error) {
       console.error(error);
-      toast.error("Failed to load resources");
+      toast.error(
+        error?.response?.data?.message || "Failed to load resources"
+      );
     } finally {
       setLoading(false);
     }
@@ -303,17 +306,22 @@ export default function ResourceManagementPage() {
       fetchResources();
     } catch (error) {
       console.error(error);
+      toast.error(
+        error?.response?.data?.message || "Failed to create resource"
+      );
     }
   };
 
   const handleSaveEdit = async (id, formData) => {
     try {
       await updateResource(id, formData);
-      toast.success("Resource updated successfully");
       setEditingResource(null);
       fetchResources();
     } catch (error) {
       console.error(error);
+      toast.error(
+        error?.response?.data?.message || "Failed to update resource"
+      );
     }
   };
 
@@ -327,7 +335,13 @@ export default function ResourceManagementPage() {
       fetchResources();
     } catch (error) {
       console.error(error);
-      toast.error("Failed to delete resource");
+
+      const backendMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        "Failed to delete resource";
+
+      toast.error(backendMessage);
     }
   };
 
@@ -619,7 +633,7 @@ export default function ResourceManagementPage() {
 
                     <td className="px-6 py-4">
                       <span
-                        className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold ${
+                        className={`inline-flex min-w-[130px] items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border px-3 py-2 text-xs font-semibold ${
                           resource.status === "ACTIVE"
                             ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-300"
                             : "border-red-500/30 bg-red-500/15 text-red-300"

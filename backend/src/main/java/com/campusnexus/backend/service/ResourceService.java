@@ -1,6 +1,8 @@
 package com.campusnexus.backend.service;
 
+import com.campusnexus.backend.model.BookingStatus;
 import com.campusnexus.backend.model.Resource;
+import com.campusnexus.backend.repository.BookingRepository;
 import com.campusnexus.backend.repository.ResourceRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -17,6 +19,7 @@ import java.util.regex.Pattern;
 public class ResourceService {
 
     private final ResourceRepository repository;
+    private final BookingRepository bookingRepository;
 
     @Value("${app.upload.dir}")
     private String uploadDir;
@@ -60,8 +63,10 @@ public class ResourceService {
     private static final Pattern TEXT_PATTERN =
             Pattern.compile("^[a-zA-Z0-9\\s\\-_.',()]+$");
 
-    public ResourceService(ResourceRepository repository) {
+    public ResourceService(ResourceRepository repository,
+                           BookingRepository bookingRepository) {
         this.repository = repository;
+        this.bookingRepository = bookingRepository;
     }
 
     public List<Resource> getAllResources() {
@@ -126,17 +131,32 @@ public class ResourceService {
     }
 
     public boolean deleteResource(Long id) {
-        if (repository.existsById(id)) {
-            Resource resource = repository.findById(id).orElse(null);
-
-            if (resource != null) {
-                deleteImageIfExists(resource.getImageUrl());
-            }
-
-            repository.deleteById(id);
-            return true;
+        if (!repository.existsById(id)) {
+            return false;
         }
-        return false;
+
+        List<BookingStatus> activeStatuses = List.of(
+                BookingStatus.PENDING,
+                BookingStatus.APPROVED
+        );
+
+        boolean hasActiveBookings =
+                bookingRepository.existsByResourceIdAndStatusIn(id, activeStatuses);
+
+        if (hasActiveBookings) {
+            throw new IllegalArgumentException(
+                    "Cannot delete resource because it has active bookings"
+            );
+        }
+
+        Resource resource = repository.findById(id).orElse(null);
+
+        if (resource != null) {
+            deleteImageIfExists(resource.getImageUrl());
+        }
+
+        repository.deleteById(id);
+        return true;
     }
 
     private void validateResourceFields(String name,
