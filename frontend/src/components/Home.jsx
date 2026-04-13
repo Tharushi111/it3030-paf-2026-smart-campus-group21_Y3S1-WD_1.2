@@ -48,7 +48,7 @@ export default function HomePage() {
   const highlights = [
     "Browse campus facilities and equipment with ease",
     "Book eligible resources through your account",
-    "Access separate dashboards for students and admins",
+    "Access separate dashboards for students and staff",
     "Enjoy a cleaner, smarter campus management workflow",
   ];
 
@@ -70,7 +70,7 @@ export default function HomePage() {
 
             <p className="mt-5 max-w-xl text-sm leading-7 text-slate-300 sm:text-base">
               A modern platform for managing campus resources, improving access,
-              and simplifying booking workflows for students and administrators.
+              and simplifying booking workflows for students.
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
