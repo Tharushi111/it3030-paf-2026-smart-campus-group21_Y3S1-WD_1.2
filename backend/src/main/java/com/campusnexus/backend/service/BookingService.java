@@ -6,6 +6,7 @@ import com.campusnexus.backend.model.*;
 import com.campusnexus.backend.repository.AppUserRepository;
 import com.campusnexus.backend.repository.BookingRepository;
 import com.campusnexus.backend.repository.ResourceRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -154,6 +155,7 @@ public class BookingService {
         return updated;
     }
 
+    @Transactional
     public void deleteBooking(Long id, String email, Role role) {
         Booking booking = getBookingById(id);
 
@@ -168,6 +170,7 @@ public class BookingService {
             throw new RuntimeException("Only pending bookings can be deleted");
         }
 
+        // Deletes all notifications linked to this booking, including admin notifications
         notificationService.deleteByReference(booking.getId(), "BOOKING");
 
         bookingRepository.delete(booking);

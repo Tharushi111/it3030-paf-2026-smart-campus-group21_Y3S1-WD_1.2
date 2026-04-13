@@ -21,6 +21,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     List<Booking> findAllByOrderByCreatedAtDesc();
 
+    // Prevent deleting resources that still have active bookings
+    boolean existsByResourceIdAndStatusIn(Long resourceId, Collection<BookingStatus> statuses);
+
     @Query("""
         SELECT b FROM Booking b
         WHERE b.resourceId = :resourceId

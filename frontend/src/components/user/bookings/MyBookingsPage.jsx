@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { FiSearch, FiCalendar } from "react-icons/fi";
+import { FiSearch, FiCalendar, FiRefreshCw } from "react-icons/fi";
 
 import {
   getMyBookings,
@@ -21,6 +21,7 @@ export default function MyBookingsPage() {
   const [bookings, setBookings] = useState([]);
   const [resourceById, setResourceById] = useState({});
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [prefillResourceId, setPrefillResourceId] = useState(null);
@@ -40,8 +41,14 @@ export default function MyBookingsPage() {
     navigate(location.pathname, { replace: true, state: {} });
   }, [location.state, location.pathname, navigate]);
 
-  const load = async () => {
+  const load = async ({ silent = false, showToast = false } = {}) => {
     try {
+      if (silent) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+
       const [bRes, rRes] = await Promise.all([
         getMyBookings(),
         getAllResources(),
@@ -55,11 +62,24 @@ export default function MyBookingsPage() {
       });
 
       setResourceById(map);
+
+      if (showToast) {
+        toast.success("Bookings refreshed");
+      }
     } catch (error) {
       console.error(error);
-      toast.error("Failed to load bookings");
+
+      if (!silent) {
+        toast.error(
+          error?.response?.data?.message || "Failed to load bookings"
+        );
+      }
     } finally {
-      setLoading(false);
+      if (silent) {
+        setRefreshing(false);
+      } else {
+        setLoading(false);
+      }
     }
   };
 
@@ -67,8 +87,8 @@ export default function MyBookingsPage() {
     load();
 
     const interval = setInterval(() => {
-      load();
-    }, 5000); // auto refresh every 5 seconds
+      load({ silent: true });
+    }, 5000);
 
     return () => clearInterval(interval);
   }, []);
@@ -79,10 +99,16 @@ export default function MyBookingsPage() {
     try {
       await cancelBooking(id);
       toast.success("Booking cancelled");
-      load();
+      load({ silent: true });
     } catch (error) {
       console.error(error);
-      toast.error(error?.response?.data?.message || "Could not cancel booking");
+
+      const backendMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        "Could not cancel booking";
+
+      toast.error(backendMessage);
     }
   };
 
@@ -92,10 +118,16 @@ export default function MyBookingsPage() {
     try {
       await deleteBooking(id);
       toast.success("Booking deleted");
-      load();
+      load({ silent: true });
     } catch (error) {
       console.error(error);
-      toast.error(error?.response?.data?.message || "Could not delete booking");
+
+      const backendMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        "Could not delete booking";
+
+      toast.error(backendMessage);
     }
   };
 
@@ -126,11 +158,9 @@ export default function MyBookingsPage() {
 
   return (
     <div className="space-y-8">
-
       {/* Hero Banner */}
       <div className="relative overflow-hidden rounded-3xl border border-orange-200 bg-gradient-to-r from-orange-500 via-amber-400 to-orange-400 p-8 text-white shadow-lg">
         <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-
           <div>
             <h1 className="text-4xl font-bold">My Bookings</h1>
             <p className="mt-2 text-orange-50">
@@ -138,13 +168,35 @@ export default function MyBookingsPage() {
             </p>
           </div>
 
+          <button
+            type="button"
+            onClick={() => load({ silent: true, showToast: true })}
+            className="inline-flex items-center gap-2 self-start rounded-xl border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/20"
+          >
+            <FiRefreshCw className={refreshing ? "animate-spin" : ""} size={15} />
+            Refresh
+          </button>
         </div>
       </div>
 
       {/* Filters */}
       <div className="rounded-3xl border border-orange-100 bg-white p-6 shadow-md">
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="mb-3 flex items-center justify-between">
+          <p className="text-sm font-medium text-slate-600">
+            Manage and track your bookings
+          </p>
 
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            {refreshing && (
+              <>
+                <FiRefreshCw className="animate-spin text-orange-500" size={13} />
+                <span>Refreshing...</span>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className="text-sm font-medium text-slate-600">Search</label>
             <div className="relative mt-2">
@@ -175,7 +227,6 @@ export default function MyBookingsPage() {
               <option value="CANCELLED">Cancelled</option>
             </select>
           </div>
-
         </div>
       </div>
 
@@ -186,7 +237,6 @@ export default function MyBookingsPage() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="rounded-3xl border border-orange-100 bg-white py-16 text-center shadow-md">
-
           <FiCalendar className="mx-auto mb-3 text-orange-300" size={34} />
 
           <p className="text-lg font-semibold text-slate-700">
@@ -196,7 +246,6 @@ export default function MyBookingsPage() {
           <p className="mt-1 text-sm text-slate-500">
             Your bookings will appear here after you reserve a resource.
           </p>
-
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
@@ -223,7 +272,7 @@ export default function MyBookingsPage() {
             setEditingBooking(null);
             setPrefillResourceId(null);
           }}
-          onCreated={load}
+          onCreated={() => load({ silent: true })}
         />
       )}
     </div>
