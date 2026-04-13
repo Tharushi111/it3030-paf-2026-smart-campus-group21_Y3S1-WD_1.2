@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import {
   getMyNotifications,
   markNotificationRead,
+  deleteNotification,
 } from "../../services/notificationService";
 import NotificationDropdown from "./NotificationDropdown";
 
@@ -15,6 +16,7 @@ export default function NotificationBell({ user, preferencesPath }) {
   const [loading, setLoading] = useState(false);
 
   const stompClientRef = useRef(null);
+  const mountedRef = useRef(true);
 
   const unreadCount = useMemo(
     () => notifications.filter((n) => !n.isRead).length,
@@ -25,12 +27,16 @@ export default function NotificationBell({ user, preferencesPath }) {
     try {
       setLoading(true);
       const res = await getMyNotifications();
-      setNotifications(res.data || []);
+      if (mountedRef.current) {
+        setNotifications(res.data || []);
+      }
     } catch (error) {
       console.error("Failed to load notifications:", error);
       toast.error("Failed to load notifications");
     } finally {
-      setLoading(false);
+      if (mountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 
@@ -49,10 +55,28 @@ export default function NotificationBell({ user, preferencesPath }) {
     }
   };
 
+  const handleDelete = async (id) => {
+    try {
+      await deleteNotification(id);
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+      toast.success("Notification deleted");
+    } catch (error) {
+      console.error("Failed to delete notification:", error);
+      toast.error(error?.response?.data?.message || "Failed to delete notification");
+    }
+  };
+
   useEffect(() => {
     if (!user?.email) return;
 
+    mountedRef.current = true;
+
     loadNotifications();
+
+    if (stompClientRef.current) {
+      stompClientRef.current.deactivate();
+      stompClientRef.current = null;
+    }
 
     const client = new Client({
       webSocketFactory: () =>
@@ -60,18 +84,22 @@ export default function NotificationBell({ user, preferencesPath }) {
       reconnectDelay: 5000,
       onConnect: () => {
         client.subscribe(`/topic/notifications/${user.email}`, (message) => {
+          if (!mountedRef.current) return;
+
           try {
             const notification = JSON.parse(message.body);
-
             setNotifications((prev) => [notification, ...prev]);
 
+            if (notification?.type === "SYSTEM") {
+              toast.success("New system notification");
+            }
           } catch (error) {
             console.error("Failed to parse websocket notification:", error);
           }
         });
       },
       onStompError: (frame) => {
-        console.error("STOMP error:", frame);
+        console.error("STOMP error:", frame.headers["message"]);
       },
       onWebSocketError: (error) => {
         console.error("WebSocket error:", error);
@@ -82,8 +110,11 @@ export default function NotificationBell({ user, preferencesPath }) {
     stompClientRef.current = client;
 
     return () => {
+      mountedRef.current = false;
+
       if (stompClientRef.current) {
         stompClientRef.current.deactivate();
+        stompClientRef.current = null;
       }
     };
   }, [user?.email]);
@@ -115,6 +146,7 @@ export default function NotificationBell({ user, preferencesPath }) {
           notifications={notifications}
           loading={loading}
           onMarkRead={handleMarkRead}
+          onDelete={handleDelete}
           preferencesPath={preferencesPath}
           onClose={() => setOpen(false)}
         />

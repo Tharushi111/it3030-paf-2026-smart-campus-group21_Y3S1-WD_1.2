@@ -28,6 +28,11 @@ public class NotificationController {
         notificationService.markAsRead(id);
     }
 
+    @DeleteMapping("/{id}")
+    public void deleteNotification(@PathVariable Long id, Principal principal) {
+        notificationService.deleteNotification(id, principal.getName());
+    }
+
     @GetMapping("/preferences")
     public NotificationPreference getPreferences(Principal principal) {
         return notificationPreferenceService.getOrCreate(principal.getName());

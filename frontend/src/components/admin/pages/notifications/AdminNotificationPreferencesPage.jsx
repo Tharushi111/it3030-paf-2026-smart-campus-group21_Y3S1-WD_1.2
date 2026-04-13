@@ -6,10 +6,13 @@ import {
   FiTool,
   FiSettings,
   FiSave,
+  FiSend,
+  FiAlertCircle,
 } from "react-icons/fi";
 import {
   getMyNotificationPreferences,
   saveMyNotificationPreferences,
+  sendSystemNotification,
 } from "../../../../services/notificationService";
 
 function ToggleSwitch({ checked, onChange }) {
@@ -62,6 +65,9 @@ export default function AdminNotificationPreferencesPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  const [announcement, setAnnouncement] = useState("");
+  const [sendingAnnouncement, setSendingAnnouncement] = useState(false);
+
   useEffect(() => {
     const loadPreferences = async () => {
       try {
@@ -105,6 +111,24 @@ export default function AdminNotificationPreferencesPage() {
     }
   };
 
+  const handleSendAnnouncement = async () => {
+    if (!announcement.trim()) {
+      toast.error("Announcement message is required");
+      return;
+    }
+
+    try {
+      setSendingAnnouncement(true);
+      await sendSystemNotification(announcement.trim());
+      setAnnouncement("");
+    } catch (error) {
+      console.error(error);
+      toast.error(error?.response?.data?.message || "Failed to send system notification");
+    } finally {
+      setSendingAnnouncement(false);
+    }
+  };
+
   return (
     <div
       className="space-y-8"
@@ -125,12 +149,54 @@ export default function AdminNotificationPreferencesPage() {
               className="text-4xl font-bold"
               style={{ fontFamily: "'Space Grotesk', sans-serif" }}
             >
-              Notification Preferences
+              Notification Center
             </h1>
             <p className="mt-2 text-orange-50 text-lg">
-              Enable or disable categories of notifications
+              Manage admin preferences and send system-wide announcements
             </p>
           </div>
+        </div>
+      </section>
+
+      <section className="rounded-3xl border border-fuchsia-500/20 bg-gradient-to-br from-fuchsia-500/10 via-purple-500/10 to-indigo-500/10 p-6 shadow-xl">
+        <div className="mb-5 flex items-center gap-3">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-fuchsia-500 to-purple-500 text-white shadow-lg">
+            <FiAlertCircle size={24} />
+          </div>
+
+          <div>
+            <h2 className="text-2xl font-bold text-white">
+              Send System Announcement
+            </h2>
+            <p className="text-sm text-zinc-300">
+              Broadcast a special system notification to all active users
+            </p>
+          </div>
+        </div>
+
+        <textarea
+          value={announcement}
+          onChange={(e) => setAnnouncement(e.target.value)}
+          rows="4"
+          maxLength={500}
+          placeholder="Example: CampusNexus system maintenance will happen tonight from 10:00 PM to 11:00 PM."
+          className="w-full rounded-2xl border border-fuchsia-500/20 bg-white/[0.05] p-4 text-white placeholder:text-zinc-500 outline-none transition focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-500/20"
+        />
+
+        <div className="mt-3 flex items-center justify-between gap-4">
+          <p className="text-xs text-zinc-400">
+            This will appear to users as a special <span className="font-semibold text-fuchsia-300">SYSTEM</span> notification.
+          </p>
+
+          <button
+            type="button"
+            onClick={handleSendAnnouncement}
+            disabled={sendingAnnouncement}
+            className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-fuchsia-500 to-purple-500 px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:scale-[1.02] disabled:opacity-60"
+          >
+            <FiSend size={16} />
+            {sendingAnnouncement ? "Sending..." : "Send Announcement"}
+          </button>
         </div>
       </section>
 

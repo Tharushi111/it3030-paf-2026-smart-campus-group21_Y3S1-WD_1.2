@@ -1,120 +1,104 @@
-import { useEffect, useMemo, useRef } from "react";
+import { Link } from "react-router-dom";
 import {
   FiBell,
-  FiCheckCircle,
   FiCalendar,
   FiTool,
-  FiMessageSquare,
   FiSettings,
+  FiTrash2,
+  FiCheckCircle,
+  FiX,
+  FiAlertCircle
 } from "react-icons/fi";
-import { Link } from "react-router-dom";
 
-function timeAgo(dateString) {
+function getNotificationStyle(type) {
+  if (!type) {
+    return {
+      badge: "bg-slate-500/10 text-slate-300 border-slate-500/20",
+      icon: <FiBell size={16} />,
+      iconBox: "bg-slate-500/10 text-slate-300",
+      label: "Notification",
+    };
+  }
+
+  if (type.startsWith("BOOKING")) {
+    return {
+      badge: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
+      icon: <FiCalendar size={16} />,
+      iconBox: "bg-emerald-500/10 text-emerald-300",
+      label: "Booking",
+    };
+  }
+
+  if (type.startsWith("TICKET")) {
+    return {
+      badge: "bg-orange-500/10 text-orange-300 border-orange-500/20",
+      icon: <FiTool size={16} />,
+      iconBox: "bg-orange-500/10 text-orange-300",
+      label: "Ticket",
+    };
+  }
+
+  if (type === "SYSTEM") {
+    return {
+      badge: "bg-fuchsia-500/10 text-fuchsia-300 border-fuchsia-500/20",
+      icon: <FiAlertCircle size={16} />,
+      iconBox: "bg-gradient-to-br from-fuchsia-500/20 to-purple-500/20 text-fuchsia-300",
+      label: "System Update",
+    };
+  }
+
+  return {
+    badge: "bg-slate-500/10 text-slate-300 border-slate-500/20",
+    icon: <FiBell size={16} />,
+    iconBox: "bg-slate-500/10 text-slate-300",
+    label: "Notification",
+  };
+}
+
+function formatDate(dateString) {
   if (!dateString) return "Just now";
 
-  const now = new Date();
-  const date = new Date(dateString);
-  const diffMs = now - date;
-
-  const minute = 60 * 1000;
-  const hour = 60 * minute;
-  const day = 24 * hour;
-
-  if (diffMs < minute) return "Just now";
-  if (diffMs < hour) return `${Math.floor(diffMs / minute)} min ago`;
-  if (diffMs < day) return `${Math.floor(diffMs / hour)} hr ago`;
-  return `${Math.floor(diffMs / day)} day ago`;
-}
-
-function getNotificationIcon(type) {
-  if (!type) return <FiBell size={15} />;
-
-  if (type.includes("BOOKING")) {
-    return <FiCalendar size={15} />;
+  try {
+    return new Date(dateString).toLocaleString([], {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  } catch {
+    return "Just now";
   }
-
-  if (type.includes("TICKET")) {
-    return <FiTool size={15} />;
-  }
-
-  if (type.includes("SYSTEM")) {
-    return <FiSettings size={15} />;
-  }
-
-  return <FiMessageSquare size={15} />;
-}
-
-function getNotificationIconClasses(type) {
-  if (!type) {
-    return "bg-orange-500/15 text-orange-300 border border-orange-500/20";
-  }
-
-  if (type.includes("BOOKING")) {
-    return "bg-emerald-500/15 text-emerald-300 border border-emerald-500/20";
-  }
-
-  if (type.includes("TICKET")) {
-    return "bg-violet-500/15 text-violet-300 border border-violet-500/20";
-  }
-
-  if (type.includes("SYSTEM")) {
-    return "bg-sky-500/15 text-sky-300 border border-sky-500/20";
-  }
-
-  return "bg-orange-500/15 text-orange-300 border border-orange-500/20";
 }
 
 export default function NotificationDropdown({
   notifications,
   loading,
   onMarkRead,
+  onDelete,
   preferencesPath,
   onClose,
 }) {
-  const panelRef = useRef(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (panelRef.current && !panelRef.current.contains(event.target)) {
-        onClose?.();
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [onClose]);
-
-  const unreadCount = useMemo(
-    () => notifications.filter((n) => !n.isRead).length,
-    [notifications]
-  );
-
   return (
-    <div
-      ref={panelRef}
-      className="absolute right-0 top-14 z-[80] w-[380px] overflow-hidden rounded-3xl border border-orange-500/20 bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 shadow-2xl"
-    >
-      <div className="border-b border-white/10 px-5 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-base font-bold text-white">Notifications</h3>
-            <p className="text-xs text-zinc-500">
-              {unreadCount} unread notification{unreadCount === 1 ? "" : "s"}
-            </p>
-          </div>
-
-          <Link
-            to={preferencesPath}
-            onClick={onClose}
-            className="inline-flex items-center gap-2 rounded-xl border border-orange-500/20 bg-orange-500/10 px-3 py-2 text-xs font-semibold text-orange-300 transition hover:bg-orange-500/20"
-          >
-            <FiSettings size={13} />
-            Preferences
-          </Link>
+    <div className="absolute right-0 top-14 z-50 w-[380px] overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 shadow-2xl">
+      <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+        <div>
+          <h3 className="text-base font-bold text-white">Notifications</h3>
+          <p className="text-xs text-zinc-500">
+            Real-time updates from the system
+          </p>
         </div>
+
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-lg p-2 text-zinc-400 transition hover:bg-white/10 hover:text-white"
+        >
+          <FiX size={16} />
+        </button>
       </div>
 
-      <div className="max-h-[420px] overflow-y-auto">
+      <div className="max-h-[430px] overflow-y-auto">
         {loading ? (
           <div className="px-5 py-10 text-center">
             <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-orange-500/30 border-t-orange-400" />
@@ -122,73 +106,97 @@ export default function NotificationDropdown({
           </div>
         ) : notifications.length === 0 ? (
           <div className="px-5 py-10 text-center">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/[0.04] text-zinc-500">
-              <FiBell size={20} />
-            </div>
+            <FiBell className="mx-auto mb-3 text-zinc-700" size={26} />
             <p className="font-semibold text-zinc-300">No notifications yet</p>
             <p className="mt-1 text-sm text-zinc-500">
-              New updates will appear here.
+              New activity will appear here.
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-white/[0.06]">
-            {notifications.map((notification) => (
-              <button
-                key={notification.id}
-                type="button"
-                onClick={() => onMarkRead(notification.id)}
-                className={`w-full px-5 py-4 text-left transition hover:bg-white/[0.04] ${
-                  notification.isRead ? "opacity-80" : ""
-                }`}
-              >
-                <div className="flex items-start gap-3">
-                  <div
-                    className={`mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl ${getNotificationIconClasses(
-                      notification.type
-                    )}`}
-                  >
-                    {getNotificationIcon(notification.type)}
-                  </div>
+          <div className="space-y-3 p-4">
+            {notifications.map((notification) => {
+              const style = getNotificationStyle(notification.type);
 
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-start justify-between gap-3">
-                      <p
-                        className={`text-sm ${
-                          notification.isRead
-                            ? "text-zinc-300"
-                            : "font-semibold text-white"
-                        }`}
-                      >
+              return (
+                <div
+                  key={notification.id}
+                  className={`rounded-2xl border p-4 transition ${
+                    notification.type === "SYSTEM"
+                      ? "border-fuchsia-500/20 bg-gradient-to-r from-fuchsia-500/10 via-purple-500/10 to-indigo-500/10 shadow-lg shadow-fuchsia-500/5"
+                      : notification.isRead
+                      ? "border-white/10 bg-white/[0.03]"
+                      : "border-orange-500/20 bg-orange-500/5"
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl ${style.iconBox}`}
+                    >
+                      {style.icon}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span
+                          className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${style.badge}`}
+                        >
+                          {style.label}
+                        </span>
+
+                        {!notification.isRead && (
+                          <span className="rounded-full bg-orange-500 px-2 py-0.5 text-[10px] font-bold text-white">
+                            NEW
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="mt-2 text-sm font-medium leading-6 text-white">
                         {notification.message}
                       </p>
 
-                      {!notification.isRead && (
-                        <span className="mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-full bg-orange-400" />
-                      )}
+                      <p className="mt-2 text-[11px] text-zinc-500">
+                        {formatDate(notification.createdAt)}
+                      </p>
                     </div>
+                  </div>
 
-                    <div className="mt-2 flex items-center justify-between gap-3">
-                      <span className="text-[11px] uppercase tracking-wide text-zinc-500">
-                        {notification.type?.replaceAll("_", " ")}
-                      </span>
-
-                      <span className="text-xs text-zinc-500">
-                        {timeAgo(notification.createdAt)}
-                      </span>
-                    </div>
-
+                  <div className="mt-4 flex items-center justify-end gap-2">
                     {!notification.isRead && (
-                      <div className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-emerald-300">
-                        <FiCheckCircle size={12} />
-                        Click to mark as read
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => onMarkRead(notification.id)}
+                        className="inline-flex items-center gap-1 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-300 transition hover:bg-emerald-500/20"
+                      >
+                        <FiCheckCircle size={13} />
+                        Mark Read
+                      </button>
                     )}
+
+                    <button
+                      type="button"
+                      onClick={() => onDelete(notification.id)}
+                      className="inline-flex items-center gap-1 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-300 transition hover:bg-red-500/20"
+                    >
+                      <FiTrash2 size={13} />
+                      Delete
+                    </button>
                   </div>
                 </div>
-              </button>
-            ))}
+              );
+            })}
           </div>
         )}
+      </div>
+
+      <div className="border-t border-white/10 p-4">
+        <Link
+          to={preferencesPath}
+          onClick={onClose}
+          className="flex items-center justify-center gap-2 rounded-2xl border border-orange-500/20 bg-orange-500/10 px-4 py-3 text-sm font-semibold text-orange-300 transition hover:bg-orange-500/20"
+        >
+          <FiSettings size={15} />
+          Notification Preferences
+        </Link>
       </div>
     </div>
   );
