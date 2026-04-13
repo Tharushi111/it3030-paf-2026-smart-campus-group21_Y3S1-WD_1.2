@@ -7,12 +7,22 @@ import com.campusnexus.backend.model.Role;
 import com.campusnexus.backend.model.Ticket;
 import com.campusnexus.backend.repository.AppUserRepository;
 import com.campusnexus.backend.repository.TicketRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -22,8 +32,15 @@ public class TicketService {
     private final AppUserRepository appUserRepository;
     private final NotificationService notificationService;
 
+    @Value("${app.ticket.upload.dir}")
+    private String ticketUploadDir;
+
     public Ticket createTicket(Ticket ticket, MultipartFile[] images) {
         ticket.setStatus("OPEN");
+
+        if (images != null && images.length > 0) {
+            ticket.setImageUrls(saveTicketImages(images));
+        }
 
         Ticket saved = ticketRepository.save(ticket);
 
@@ -104,6 +121,15 @@ public class TicketService {
         ticket.setCategory(updated.getCategory());
         ticket.setPriority(updated.getPriority());
         ticket.setLocation(updated.getLocation());
+        ticket.setResourceId(updated.getResourceId());
+        ticket.setPreferredContactName(updated.getPreferredContactName());
+        ticket.setPreferredContactEmail(updated.getPreferredContactEmail());
+        ticket.setPreferredContactPhone(updated.getPreferredContactPhone());
+
+        if (images != null && images.length > 0 && !images[0].isEmpty()) {
+            deleteTicketImages(ticket.getImageUrls());
+            ticket.setImageUrls(saveTicketImages(images));
+        }
 
         Ticket saved = ticketRepository.save(ticket);
 
@@ -116,6 +142,7 @@ public class TicketService {
         return saved;
     }
 
+    @Transactional
     public void deleteTicket(Long id, String email) {
         Ticket ticket = getTicketById(id);
 
@@ -124,7 +151,7 @@ public class TicketService {
         }
 
         notificationService.deleteByReference(ticket.getId(), "TICKET");
-
+        deleteTicketImages(ticket.getImageUrls());
         ticketRepository.delete(ticket);
     }
 
@@ -161,6 +188,88 @@ public class TicketService {
                         refId,
                         "TICKET"
                 );
+            }
+        }
+    }
+
+    private List<String> saveTicketImages(MultipartFile[] images) {
+        List<String> imageUrls = new ArrayList<>();
+
+        for (MultipartFile image : images) {
+            if (image == null || image.isEmpty()) {
+                continue;
+            }
+
+            validateImage(image);
+            imageUrls.add(saveSingleImage(image));
+        }
+
+        if (imageUrls.size() > 3) {
+            throw new IllegalArgumentException("You can upload up to 3 images only");
+        }
+
+        return imageUrls;
+    }
+
+    private void validateImage(MultipartFile image) {
+        String contentType = image.getContentType();
+
+        if (contentType == null || (!contentType.equals("image/jpeg")
+                && !contentType.equals("image/png")
+                && !contentType.equals("image/jpg")
+                && !contentType.equals("image/webp")
+                && !contentType.equals("image/gif"))) {
+            throw new IllegalArgumentException("Only JPG, JPEG, PNG, GIF, and WEBP images are allowed");
+        }
+
+        long maxSize = 5 * 1024 * 1024;
+        if (image.getSize() > maxSize) {
+            throw new IllegalArgumentException("Each image must be less than 5MB");
+        }
+    }
+
+    private String saveSingleImage(MultipartFile image) {
+        try {
+            Path uploadPath = Paths.get(ticketUploadDir.trim()).toAbsolutePath().normalize();
+            Files.createDirectories(uploadPath);
+
+            String originalFilename = image.getOriginalFilename();
+            String extension = "";
+
+            if (originalFilename != null && originalFilename.contains(".")) {
+                extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            }
+
+            String fileName = UUID.randomUUID() + extension;
+            Path filePath = uploadPath.resolve(fileName);
+
+            Files.copy(image.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+            return "/uploads/tickets/" + fileName;
+
+        } catch (InvalidPathException e) {
+            throw new RuntimeException("Invalid ticket upload path: " + ticketUploadDir, e);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to save ticket image", e);
+        }
+    }
+
+    private void deleteTicketImages(List<String> imageUrls) {
+        if (imageUrls == null || imageUrls.isEmpty()) {
+            return;
+        }
+
+        for (String imageUrl : imageUrls) {
+            if (imageUrl == null || imageUrl.isBlank()) {
+                continue;
+            }
+
+            try {
+                String fileName = imageUrl.replace("/uploads/tickets/", "");
+                Path filePath = Paths.get(ticketUploadDir.trim()).toAbsolutePath().normalize().resolve(fileName);
+                Files.deleteIfExists(filePath);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to delete ticket image", e);
             }
         }
     }

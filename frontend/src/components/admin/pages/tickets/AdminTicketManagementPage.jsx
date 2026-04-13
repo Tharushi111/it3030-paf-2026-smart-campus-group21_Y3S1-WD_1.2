@@ -60,7 +60,6 @@ export default function AdminTicketManagementPage() {
       setTickets(response.data || []);
 
       if (showToast) {
-        toast.success("Tickets refreshed");
       }
     } catch (error) {
       console.error(error);

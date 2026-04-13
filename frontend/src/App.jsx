@@ -16,6 +16,7 @@ import AdminDashboard from "./components/admin/AdminDashboard.jsx";
 import ResourceManagementPage from "./components/admin/pages/resources/ResourceManagementPage.jsx";
 import AdminTicketManagementPage from "./components/admin/pages/tickets/AdminTicketManagementPage.jsx";
 import AdminBookingManagementPage from "./components/admin/pages/bookings/AdminBookingManagementPage.jsx";
+import AdminUsersPage from "./components/admin/pages/users/AdminUsersPage.jsx";
 
 import StaffLayout from "./components/layout/StaffLayout.jsx";
 import StaffDashboard from "./components/staff/StaffDashboard.jsx";
@@ -110,7 +111,6 @@ function RootRoute() {
 export default function App() {
   return (
     <Routes>
-      {/* USER / PUBLIC LAYOUT */}
       <Route element={<UserLayout />}>
         <Route index element={<RootRoute />} />
         <Route path="about" element={<AboutPage />} />
@@ -134,7 +134,6 @@ export default function App() {
         <Route path="*" element={<NotFoundPage />} />
       </Route>
 
-      {/* ADMIN LAYOUT */}
       <Route element={<ProtectedRoute />}>
         <Route element={<AdminRoute />}>
           <Route path="/admin" element={<AdminLayout />}>
@@ -142,6 +141,7 @@ export default function App() {
             <Route path="resources" element={<ResourceManagementPage />} />
             <Route path="tickets" element={<AdminTicketManagementPage />} />
             <Route path="bookings" element={<AdminBookingManagementPage />} />
+            <Route path="users" element={<AdminUsersPage />} />
             <Route
               path="notifications"
               element={<AdminNotificationPreferencesPage />}
@@ -150,7 +150,6 @@ export default function App() {
         </Route>
       </Route>
 
-      {/* STAFF LAYOUT */}
       <Route element={<ProtectedRoute />}>
         <Route element={<StaffRoute />}>
           <Route path="/staff" element={<StaffLayout />}>

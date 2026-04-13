@@ -46,6 +46,7 @@ export default function EditTicketModal({ ticket, onClose, onUpdated }) {
 
   const [images, setImages] = useState([]);
   const [previewUrls, setPreviewUrls] = useState([]);
+  const [usingNewImages, setUsingNewImages] = useState(false);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -63,8 +64,11 @@ export default function EditTicketModal({ ticket, onClose, onUpdated }) {
       });
 
       setImages([]);
+      setUsingNewImages(false);
       setPreviewUrls(
-        (ticket.imageUrls || []).map((img) => `http://localhost:9090${img}`)
+        (ticket.imageUrls || []).map((img) =>
+          img.startsWith("http") ? img : `http://localhost:9090${img}`
+        )
       );
       setErrors({});
     }
@@ -174,13 +178,16 @@ export default function EditTicketModal({ ticket, onClose, onUpdated }) {
     }
 
     previewUrls.forEach((url) => {
-      if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+      if (url.startsWith("blob:")) {
+        URL.revokeObjectURL(url);
+      }
     });
 
     const newPreviewUrls = files.map((file) => URL.createObjectURL(file));
 
     setImages(files);
     setPreviewUrls(newPreviewUrls);
+    setUsingNewImages(true);
     setErrors((prev) => ({
       ...prev,
       images: "",
@@ -194,15 +201,17 @@ export default function EditTicketModal({ ticket, onClose, onUpdated }) {
       (_, index) => index !== indexToRemove
     );
 
-    const updatedImages = images.filter((_, index) => index !== indexToRemove);
-
     const removedUrl = previewUrls[indexToRemove];
     if (removedUrl?.startsWith("blob:")) {
       URL.revokeObjectURL(removedUrl);
     }
 
     setPreviewUrls(updatedPreviewUrls);
-    setImages(updatedImages);
+
+    if (usingNewImages) {
+      const updatedImages = images.filter((_, index) => index !== indexToRemove);
+      setImages(updatedImages);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -223,18 +232,14 @@ export default function EditTicketModal({ ticket, onClose, onUpdated }) {
       payload.append("priority", formData.priority);
       payload.append("location", formData.location.trim());
       payload.append("preferredContactName", formData.preferredContactName.trim());
-      payload.append(
-        "preferredContactEmail",
-        formData.preferredContactEmail.trim()
-      );
-      payload.append(
-        "preferredContactPhone",
-        formData.preferredContactPhone.trim()
-      );
+      payload.append("preferredContactEmail", formData.preferredContactEmail.trim());
+      payload.append("preferredContactPhone", formData.preferredContactPhone.trim());
 
-      images.forEach((image) => {
-        payload.append("images", image);
-      });
+      if (usingNewImages) {
+        images.forEach((image) => {
+          payload.append("images", image);
+        });
+      }
 
       await updateTicket(ticket.id, payload);
 
