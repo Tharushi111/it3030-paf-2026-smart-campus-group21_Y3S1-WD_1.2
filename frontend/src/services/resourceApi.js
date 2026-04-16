@@ -2,6 +2,7 @@ import axios from "axios";
 
 const API = axios.create({
   baseURL: "http://localhost:9090/api/resources",
+  withCredentials: true,
 });
 
 export const getAllResources = () => API.get("");

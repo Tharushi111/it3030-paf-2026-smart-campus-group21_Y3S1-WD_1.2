@@ -10,10 +10,10 @@ import {
   FiTrash2,
   FiUsers,
   FiAlertCircle,
-  FiFilter,
   FiLayers,
   FiImage,
   FiChevronDown,
+  FiRefreshCw,
 } from "react-icons/fi";
 import AddResourceModal from "./ResourceForm";
 import EditResourceModal from "./EditResourceModal";
@@ -24,7 +24,7 @@ import {
   updateResource,
 } from "../../../../services/resourceApi";
 
-//Custom Dropdown Component
+// Custom Dropdown Component
 function CustomDropdown({ value, options, onChange, placeholder }) {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -51,7 +51,7 @@ function CustomDropdown({ value, options, onChange, placeholder }) {
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         className={`flex w-full items-center justify-between rounded-xl border border-orange-500/30 bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 px-3 py-2.5 text-sm text-white outline-none transition-all hover:border-orange-500/40 focus:ring-2 focus:ring-orange-500/20 ${
-          open ? "ring-2 ring-orange-500/20 border-orange-500/40" : ""
+          open ? "border-orange-500/40 ring-2 ring-orange-500/20" : ""
         }`}
       >
         <span className="truncate">
@@ -66,7 +66,7 @@ function CustomDropdown({ value, options, onChange, placeholder }) {
 
       {open && (
         <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-xl border border-orange-500/30 bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 shadow-xl">
-          <div className="max-h-64 overflow-y-auto custom-scroll">
+          <div className="custom-scroll max-h-64 overflow-y-auto">
             {options.map((option) => (
               <button
                 key={option.value}
@@ -74,7 +74,7 @@ function CustomDropdown({ value, options, onChange, placeholder }) {
                 onClick={() => handleSelect(option.value)}
                 className={`block w-full px-4 py-2.5 text-left text-sm transition-all ${
                   option.value === value
-                    ? "bg-orange-500/20 text-orange-300 font-semibold"
+                    ? "bg-orange-500/20 font-semibold text-orange-300"
                     : "text-zinc-300 hover:bg-orange-500/10 hover:text-orange-200"
                 }`}
               >
@@ -105,7 +105,6 @@ function CustomDropdown({ value, options, onChange, placeholder }) {
   );
 }
 
-// Extended TYPE_STYLES for all resource types
 const TYPE_STYLES = {
   LAB: {
     bg: "bg-blue-500/15",
@@ -197,7 +196,7 @@ const TYPE_STYLES = {
 function StatCard({ title, value, subtitle, icon, gradient, border }) {
   return (
     <div
-      className={`rounded-2xl border ${border} p-5 shadow-xl bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 transition-all hover:-translate-y-[2px]`}
+      className={`rounded-2xl border ${border} bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 p-5 shadow-xl transition-all hover:-translate-y-[2px]`}
     >
       <div className="mb-3 flex items-start justify-between">
         <div
@@ -240,7 +239,6 @@ function ResourceImageCell({ resource }) {
   );
 }
 
-// Options for custom dropdowns
 const typeOptions = [
   { value: "ALL", label: "All Types" },
   { value: "LAB", label: "LAB" },
@@ -277,13 +275,20 @@ export default function ResourceManagementPage() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [typeFilter, setTypeFilter] = useState("ALL");
 
-  const fetchResources = async () => {
+  const fetchResources = async (showToast = false) => {
     try {
       setLoading(true);
       const response = await getAllResources();
-      setResources(response.data);
+      setResources(response.data || []);
+
+      if (showToast) {
+        toast.success("Resources refreshed");
+      }
     } catch (error) {
-      toast.error("Failed to load resources");
+      console.error(error);
+      toast.error(
+        error?.response?.data?.message || "Failed to load resources"
+      );
     } finally {
       setLoading(false);
     }
@@ -301,6 +306,9 @@ export default function ResourceManagementPage() {
       fetchResources();
     } catch (error) {
       console.error(error);
+      toast.error(
+        error?.response?.data?.message || "Failed to create resource"
+      );
     }
   };
 
@@ -311,6 +319,9 @@ export default function ResourceManagementPage() {
       fetchResources();
     } catch (error) {
       console.error(error);
+      toast.error(
+        error?.response?.data?.message || "Failed to update resource"
+      );
     }
   };
 
@@ -324,7 +335,13 @@ export default function ResourceManagementPage() {
       fetchResources();
     } catch (error) {
       console.error(error);
-      toast.error("Failed to delete resource");
+
+      const backendMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        "Failed to delete resource";
+
+      toast.error(backendMessage);
     }
   };
 
@@ -399,7 +416,6 @@ export default function ResourceManagementPage() {
         }
       `}</style>
 
-      {/* Page Header */}
       <section className="fade-in flex items-center justify-between">
         <div>
           <div className="mb-1 flex items-center gap-2">
@@ -421,16 +437,26 @@ export default function ResourceManagementPage() {
           </p>
         </div>
 
-        <button
-          onClick={() => setAddModalOpen(true)}
-          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-400 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/25 transition-all hover:scale-[1.02] hover:shadow-orange-500/40"
-        >
-          <FiPlus size={16} />
-          Add Resource
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => fetchResources(true)}
+            disabled={loading}
+            className="inline-flex items-center gap-2 rounded-xl border border-orange-500/30 bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 px-4 py-3 text-sm font-semibold text-orange-300 shadow-lg transition-all hover:border-orange-400 hover:bg-orange-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <FiRefreshCw className={loading ? "animate-spin" : ""} size={16} />
+            Refresh
+          </button>
+
+          <button
+            onClick={() => setAddModalOpen(true)}
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-400 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/25 transition-all hover:scale-[1.02] hover:shadow-orange-500/40"
+          >
+            <FiPlus size={16} />
+            Add Resource
+          </button>
+        </div>
       </section>
 
-      {/* Stats */}
       <section
         className="fade-in grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"
         style={{ animationDelay: "80ms" }}
@@ -469,7 +495,6 @@ export default function ResourceManagementPage() {
         />
       </section>
 
-      {/* Filter Bar with Custom Dropdowns – added relative and z-10 */}
       <section
         className="fade-in relative z-10 rounded-2xl border border-orange-500/30 bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 px-5 py-4 shadow-md"
         style={{ animationDelay: "160ms" }}
@@ -522,7 +547,6 @@ export default function ResourceManagementPage() {
         </div>
       </section>
 
-      {/* Resource Table */}
       <section
         className="table-scrollbar fade-in overflow-x-auto rounded-2xl border border-white/[0.07] bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950"
         style={{ animationDelay: "240ms" }}
@@ -568,7 +592,7 @@ export default function ResourceManagementPage() {
                 <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-orange-400">
                   Actions
                 </th>
-               </tr>
+              </tr>
             </thead>
 
             <tbody>
@@ -609,7 +633,7 @@ export default function ResourceManagementPage() {
 
                     <td className="px-6 py-4">
                       <span
-                        className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold ${
+                        className={`inline-flex min-w-[130px] items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border px-3 py-2 text-xs font-semibold ${
                           resource.status === "ACTIVE"
                             ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-300"
                             : "border-red-500/30 bg-red-500/15 text-red-300"
@@ -655,7 +679,6 @@ export default function ResourceManagementPage() {
         )}
       </section>
 
-      {/* Modals */}
       {addModalOpen && (
         <AddResourceModal
           onClose={() => setAddModalOpen(false)}

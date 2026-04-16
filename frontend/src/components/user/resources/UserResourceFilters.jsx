@@ -96,7 +96,7 @@ function CustomDropdown({
       </div>
 
       {/* Custom scrollbar styles */}
-      <style jsx>{`
+      <style>{`
         .custom-scroll::-webkit-scrollbar {
           width: 6px;
         }

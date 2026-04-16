@@ -1,0 +1,23 @@
+package com.campusnexus.backend.model;
+
+public enum NotificationType {
+
+    // BOOKING
+    BOOKING_CREATED,
+    BOOKING_UPDATED,
+    BOOKING_CANCELLED,
+    BOOKING_DELETED,
+    BOOKING_APPROVED,
+    BOOKING_REJECTED,
+
+    // TICKET
+    TICKET_CREATED,
+    TICKET_UPDATED,
+    TICKET_DELETED,
+    TICKET_ASSIGNED,
+    TICKET_STATUS_CHANGED,
+    TICKET_COMMENTED,
+
+    // SYSTEM
+    SYSTEM
+}

@@ -1,6 +1,8 @@
 package com.campusnexus.backend.service;
 
+import com.campusnexus.backend.model.BookingStatus;
 import com.campusnexus.backend.model.Resource;
+import com.campusnexus.backend.repository.BookingRepository;
 import com.campusnexus.backend.repository.ResourceRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -17,6 +19,7 @@ import java.util.regex.Pattern;
 public class ResourceService {
 
     private final ResourceRepository repository;
+    private final BookingRepository bookingRepository;
 
     @Value("${app.upload.dir}")
     private String uploadDir;
@@ -24,6 +27,7 @@ public class ResourceService {
     private static final Set<String> ALLOWED_TYPES = Set.of(
             "LAB",
             "LECTURE_HALL",
+            "MEETING_ROOM",
             "AUDITORIUM",
             "LIBRARY_FLOOR",
             "STUDY_AREA",
@@ -59,8 +63,10 @@ public class ResourceService {
     private static final Pattern TEXT_PATTERN =
             Pattern.compile("^[a-zA-Z0-9\\s\\-_.',()]+$");
 
-    public ResourceService(ResourceRepository repository) {
+    public ResourceService(ResourceRepository repository,
+                           BookingRepository bookingRepository) {
         this.repository = repository;
+        this.bookingRepository = bookingRepository;
     }
 
     public List<Resource> getAllResources() {
@@ -125,17 +131,32 @@ public class ResourceService {
     }
 
     public boolean deleteResource(Long id) {
-        if (repository.existsById(id)) {
-            Resource resource = repository.findById(id).orElse(null);
-
-            if (resource != null) {
-                deleteImageIfExists(resource.getImageUrl());
-            }
-
-            repository.deleteById(id);
-            return true;
+        if (!repository.existsById(id)) {
+            return false;
         }
-        return false;
+
+        List<BookingStatus> activeStatuses = List.of(
+                BookingStatus.PENDING,
+                BookingStatus.APPROVED
+        );
+
+        boolean hasActiveBookings =
+                bookingRepository.existsByResourceIdAndStatusIn(id, activeStatuses);
+
+        if (hasActiveBookings) {
+            throw new IllegalArgumentException(
+                    "Cannot delete resource because it has active bookings"
+            );
+        }
+
+        Resource resource = repository.findById(id).orElse(null);
+
+        if (resource != null) {
+            deleteImageIfExists(resource.getImageUrl());
+        }
+
+        repository.deleteById(id);
+        return true;
     }
 
     private void validateResourceFields(String name,
@@ -149,11 +170,11 @@ public class ResourceService {
             throw new IllegalArgumentException("Resource name is required");
         }
 
-        if (name.length() > 100) {
+        if (name.trim().length() > 100) {
             throw new IllegalArgumentException("Resource name must not exceed 100 characters");
         }
 
-        if (!TEXT_PATTERN.matcher(name).matches()) {
+        if (!TEXT_PATTERN.matcher(name.trim()).matches()) {
             throw new IllegalArgumentException("Resource name contains invalid characters");
         }
 
@@ -169,11 +190,11 @@ public class ResourceService {
             throw new IllegalArgumentException("Location is required");
         }
 
-        if (location.length() > 200) {
+        if (location.trim().length() > 200) {
             throw new IllegalArgumentException("Location must not exceed 200 characters");
         }
 
-        if (!TEXT_PATTERN.matcher(location).matches()) {
+        if (!TEXT_PATTERN.matcher(location.trim()).matches()) {
             throw new IllegalArgumentException("Location contains invalid characters");
         }
 
@@ -241,10 +262,10 @@ public class ResourceService {
 
             Files.copy(image.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-            return "/uploads/" + fileName;
+            return "/uploads/resources/" + fileName;
 
         } catch (IOException e) {
-            throw new RuntimeException("Failed to save image");
+            throw new RuntimeException("Failed to save image", e);
         }
     }
 
@@ -254,11 +275,11 @@ public class ResourceService {
         }
 
         try {
-            String fileName = imageUrl.replace("/uploads/", "");
+            String fileName = imageUrl.replace("/uploads/resources/", "");
             Path filePath = Paths.get(uploadDir).toAbsolutePath().normalize().resolve(fileName);
             Files.deleteIfExists(filePath);
         } catch (IOException e) {
-            throw new RuntimeException("Failed to delete old image");
+            throw new RuntimeException("Failed to delete old image", e);
         }
     }
 }
