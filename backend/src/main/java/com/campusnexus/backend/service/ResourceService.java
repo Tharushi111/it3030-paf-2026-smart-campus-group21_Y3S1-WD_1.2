@@ -19,8 +19,11 @@ import java.util.regex.Pattern;
 public class ResourceService {
 
     private final ResourceRepository repository;
+
+    // Booking repository is used to check whether resource has active bookings
     private final BookingRepository bookingRepository;
 
+     // Upload folder path comes from application.properties
     @Value("${app.upload.dir}")
     private String uploadDir;
 
@@ -93,10 +96,13 @@ public class ResourceService {
         resource.setLocation(location.trim());
         resource.setStatus(status.trim());
 
+
+        // If image exists, save it and store its URL
         if (image != null && !image.isEmpty()) {
             resource.setImageUrl(saveImage(image));
         }
 
+        // Save to database
         return repository.save(resource);
     }
 
@@ -110,6 +116,7 @@ public class ResourceService {
 
         Resource resource = repository.findById(id).orElse(null);
 
+        // If not found return null so controller can return 404
         if (resource == null) {
             return null;
         }
@@ -122,6 +129,7 @@ public class ResourceService {
         resource.setLocation(location.trim());
         resource.setStatus(status.trim());
 
+        // If new image is uploaded, delete old image and save new one
         if (image != null && !image.isEmpty()) {
             deleteImageIfExists(resource.getImageUrl());
             resource.setImageUrl(saveImage(image));
@@ -135,6 +143,7 @@ public class ResourceService {
             return false;
         }
 
+         // do not allow deletion if resource has active bookings
         List<BookingStatus> activeStatuses = List.of(
                 BookingStatus.PENDING,
                 BookingStatus.APPROVED

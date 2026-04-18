@@ -24,6 +24,7 @@ public class ResourceController {
         return ResponseEntity.ok(service.getAllResources());
     }
 
+    // Returns 200 if found, 404 if not found
     @GetMapping("/{id}")
     public ResponseEntity<Resource> getResourceById(@PathVariable Long id) {
         Resource resource = service.getResourceById(id);
@@ -33,6 +34,8 @@ public class ResourceController {
         return ResponseEntity.notFound().build();
     }
 
+    // Consumes multipart/form-data because it accepts text fields + image file
+    // Returns 201 Created
     @PostMapping(consumes = "multipart/form-data")
     public ResponseEntity<Resource> createResource(
             @RequestParam String name,
@@ -46,6 +49,8 @@ public class ResourceController {
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
+    // If resource exists return 200
+    // If not found return 404
     @PutMapping(value = "/{id}", consumes = "multipart/form-data")
     public ResponseEntity<Resource> updateResource(
             @PathVariable Long id,
@@ -65,6 +70,7 @@ public class ResourceController {
         return ResponseEntity.notFound().build();
     }
 
+     // Returns 204 when successful, 404 if not found
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteResource(@PathVariable Long id) {
         boolean deleted = service.deleteResource(id);
