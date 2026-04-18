@@ -202,9 +202,9 @@ Main functions:
 
 | Name | Responsibilities |
 |------|------------------|
-| **Paranagama P D T** | **Authentication, Notification Management, Facilities & Assets Module** |
-| Member 2 | Booking Management |
-| Member 3 | Maintenance & Ticketing |
+| **Paranagama P D T** | **Facilities & Assets Module, Authentication and Notification Management** |
+| **Jayasekara J.M.S.H** | **Booking Management** |
+| **Wijesinghe H.T.T.M** | **Maintenance & Ticketing** |
 
 
 ---
@@ -222,16 +222,28 @@ CampusNexus follows a full-stack client-server architecture:
 
 ## Sample API Endpoints
 
-### Authentication
-- `GET /api/auth/me`
-- `POST /api/auth/logout`
-- `GET /api/debug/auth`
-
 ### Resources
 - `GET /api/resources`
 - `POST /api/resources`
 - `PUT /api/resources/{id}`
 - `DELETE /api/resources/{id}`
+
+### Authentication
+- `GET    /api/auth/test`
+- `GET    /api/auth/me`
+- `GET    /api/auth/debug-role`
+- `POST   /api/auth/logout`
+- `GET    /api/admin/users`
+- `POST   /api/admin/users`
+- `PUT    /api/admin/users/{id}`
+- `DELETE /api/admin/users/{id}`
+
+### Notifications
+- `GET    /api/notifications`
+- `PATCH  /api/notifications/{id}/read`
+- `DELETE /api/notifications/{id}`
+- `GET    /api/notifications/preferences`
+- `PUT    /api/notifications/preferences`
 
 ### Bookings
 - `POST /api/bookings/resource/{resourceId}`
@@ -252,18 +264,6 @@ CampusNexus follows a full-stack client-server architecture:
 - `PATCH /api/tickets/{id}/assign`
 - `PATCH /api/tickets/{id}/status`
 - `DELETE /api/tickets/{id}`
-
-### Notifications
-- `GET /api/notifications`
-- `PATCH /api/notifications/{id}/read`
-- `GET /api/notifications/preferences`
-- `PUT /api/notifications/preferences`
-
-### Admin User Management
-- `GET /api/admin/users`
-- `POST /api/admin/users`
-- `PUT /api/admin/users/{id}`
-- `DELETE /api/admin/users/{id}`
 
 ---
 
@@ -437,7 +437,7 @@ feature/notification-management
 
 ##  License
 
-This project is developed for academic purposes only.
+This project is developed for academic purposes.
 
 ---
 
