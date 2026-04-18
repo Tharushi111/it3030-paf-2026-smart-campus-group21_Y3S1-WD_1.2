@@ -86,7 +86,6 @@ The platform supports different user roles so that each user sees features relev
 - Git and GitHub
 - Postman
 - VS Code
-- IntelliJ IDEA
 
 ---
 
