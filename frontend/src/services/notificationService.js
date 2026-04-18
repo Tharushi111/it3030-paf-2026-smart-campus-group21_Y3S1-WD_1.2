@@ -1,6 +1,6 @@
 import axios from "axios";
 
-/* Notification API instance */
+// Notification API instance 
 
 const API = axios.create({
   baseURL: "http://localhost:9090/api/notifications",
@@ -8,40 +8,40 @@ const API = axios.create({
 });
 
 
-/*GET MY NOTIFICATIONS */
+//Get my notifications
 export const getMyNotifications = () => API.get("");
 
 
 
-/* MARK NOTIFICATION AS READ */
+//Mark notifications as read 
 export const markNotificationRead = (id) =>
   API.patch(`/${id}/read`);
 
 
 
 
-/*DELETE NOTIFICATION */
+//Delete notifications
 export const deleteNotification = (id) =>
   API.delete(`/${id}`);
 
 
 
 
-/*GET USER NOTIFICATION SETTINGs */
+//Get user notification settings
 export const getMyNotificationPreferences = () =>
   API.get("/preferences");
 
 
 
 
-/* SAVE USER NOTIFICATION SETTINGS */
+// Save user notification settings
 export const saveMyNotificationPreferences = (payload) =>
   API.put("/preferences", payload);
 
 
 
 
-/* ADMIN: SEND SYSTEM NOTIFICATION*/
+// ADMIN - send system notification
 export const sendSystemNotification = (message) =>
   axios.post(
     "http://localhost:9090/api/admin/notifications/system",
