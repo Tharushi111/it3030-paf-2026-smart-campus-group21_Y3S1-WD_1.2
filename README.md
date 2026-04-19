@@ -439,6 +439,8 @@ feature/notification-management
  - Module: IT3030 – PAF
  - Group:  Y3S1-WD-Group21_1.2
 
+---
+
 ##  License
 
 This project is developed for academic purposes.
