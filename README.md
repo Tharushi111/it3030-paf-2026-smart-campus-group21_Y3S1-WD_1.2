@@ -271,8 +271,8 @@ CampusNexus follows a full-stack client-server architecture:
 ## 1. Clone the Repository
 
 ```bash
-git clone https://github.com/Tharushi111/it3030-paf-2026-smart-campus-group29_1.2.git
-cd it3030-paf-2026-smart-campus-group29_1.2
+git clone https://github.com/Tharushi111/it3030-paf-2026-smart-campus-group21_Y3S1-WD_1.2.git
+cd it3030-paf-2026-smart-campus-group21_Y3S1-WD_1.2
 ```
 
 ### 2️ Backend Setup
