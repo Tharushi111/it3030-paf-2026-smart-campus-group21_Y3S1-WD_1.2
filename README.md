@@ -201,7 +201,7 @@ Main functions:
 
 | Name | Responsibilities |
 |------|------------------|
-| **Paranagama P D T** | **Facilities & Assets Module, Authentication and Notification Management** |
+| **Paranagama P D T** | **Facilities & Assets Module, Authentication and Notification Management, Admin Dashboard with usage analytics** |
 | **Jayasekara J.M.S.H** | **Booking Management** |
 | **Wijesinghe H.T.T.M** | **Maintenance & Ticketing** |
 
