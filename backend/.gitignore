@@ -1,3 +1,6 @@
+# Local dev properties with secrets
+application-dev.properties
+*.properties.dev
 HELP.md
 target/
 .mvn/wrapper/maven-wrapper.jar
