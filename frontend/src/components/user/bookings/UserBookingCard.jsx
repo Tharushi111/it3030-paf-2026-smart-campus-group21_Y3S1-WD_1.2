@@ -11,7 +11,7 @@ import {
 } from "react-icons/fi";
 import { getBookingQr } from "../../../services/bookingService";
 import toast from "react-hot-toast";
-import logo from "/src/assets/temp.png"
+import logo from "/src/assets/Logo.png"
 
 function formatTime(t) {
   if (t == null) return "—";
