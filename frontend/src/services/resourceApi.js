@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://localhost:9090/api/resources",
+  baseURL: "https://campusnexus-backend.onrender.com/api/resources",
   withCredentials: true,
 });
 

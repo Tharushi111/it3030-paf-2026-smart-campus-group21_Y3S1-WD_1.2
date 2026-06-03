@@ -3,7 +3,7 @@ import axios from "axios";
 // Notification API instance 
 
 const API = axios.create({
-  baseURL: "http://localhost:9090/api/notifications",
+  baseURL: "https://campusnexus-backend.onrender.com/api/notifications",
   withCredentials: true,
 });
 

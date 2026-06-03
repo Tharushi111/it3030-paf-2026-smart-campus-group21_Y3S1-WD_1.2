@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://localhost:9090/api/bookings",
+  baseURL: "https://campusnexus-backend.onrender.com/api/bookings",
   withCredentials: true,
 });
 

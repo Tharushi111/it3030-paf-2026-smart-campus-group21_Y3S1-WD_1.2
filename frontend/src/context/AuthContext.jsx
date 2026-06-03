@@ -4,7 +4,7 @@ import axios from "axios";
 const AuthContext = createContext();
 
 export const API = axios.create({
-  baseURL: "http://localhost:9090",
+  baseURL: "https://campusnexus-backend.onrender.com",
   withCredentials: true,
 });
 
