@@ -32,7 +32,7 @@ export function AuthProvider({ children }) {
 
   const loginWithGoogle = () => {
     window.location.href =
-      "http://localhost:9090/oauth2/authorization/google?prompt=select_account";
+      "https://campusnexus-backend.onrender.com/oauth2/authorization/google?prompt=select_account";
   };
 
   const switchAccount = async () => {
