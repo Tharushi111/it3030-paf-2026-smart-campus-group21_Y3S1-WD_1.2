@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17-jdk-slim
+FROM eclipse-temurin:17-jdk
 WORKDIR /app
 
 # Copy maven wrapper files first (better caching)
